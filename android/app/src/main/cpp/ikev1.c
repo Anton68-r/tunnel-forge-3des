@@ -814,7 +814,7 @@ static int isakmp_aes128_decrypt(const uint8_t key16[16], const uint8_t iv_in[16
 
 static size_t build_p1_sa(uint8_t *b, size_t cap) {
   size_t o = 0;
-  if (o + 8 + 80 > cap)
+  if (o + 8 + 120 > cap)
     return 0;
   util_write_be32(b + o, 1);
   o += 4;
@@ -822,14 +822,19 @@ static size_t build_p1_sa(uint8_t *b, size_t cap) {
   o += 4;
 
   /*
-   * Force IKEv1 Main Mode to the server-required proposal:
-   * 3DES-CBC + HMAC-SHA1 + PSK + MODP2048 (DH group 14).
-   *
-   * Do not offer AES here. If AES is offered first, some peers select AES
-   * and the resulting APK no longer guarantees the requested 3DES profile.
+   * DIAGNOSTIC ONLY: offer 3DES first, then AES in the same ISAKMP proposal.
+   * This tests whether the peer requires a multi-transform proposal while
+   * keeping 3DES as the first/most preferred transform.
    */
-  static const uint8_t attrs_3des_sha1_dh14[] = {
+  static const uint8_t attrs_3des[] = {
       0x80, 0x01, 0x00, 0x05, /* ENCRYPTION_ALGORITHM = 3DES */
+      0x80, 0x02, 0x00, 0x02, /* HASH_ALGORITHM = SHA1 */
+      0x80, 0x03, 0x00, 0x01, /* AUTHENTICATION_METHOD = pre-shared key */
+      0x80, 0x04, 0x00, 0x0e  /* GROUP_DESCRIPTION = MODP2048 / DH14 */
+  };
+  static const uint8_t attrs_aes[] = {
+      0x80, 0x01, 0x00, 0x07, /* ENCRYPTION_ALGORITHM = AES-128 */
+      0x80, 0x0e, 0x00, 0x80, /* KEY_LENGTH = 128 bits */
       0x80, 0x02, 0x00, 0x02, /* HASH_ALGORITHM = SHA1 */
       0x80, 0x03, 0x00, 0x01, /* AUTHENTICATION_METHOD = pre-shared key */
       0x80, 0x04, 0x00, 0x0e  /* GROUP_DESCRIPTION = MODP2048 / DH14 */
@@ -843,20 +848,36 @@ static size_t build_p1_sa(uint8_t *b, size_t cap) {
   b[o++] = 1; /* proposal # */
   b[o++] = 1; /* protocol = ISAKMP */
   b[o++] = 0; /* SPI size */
-  b[o++] = 1; /* exactly one transform */
+  b[o++] = 2; /* two transforms */
 
-  size_t t0 = o;
-  b[o++] = IKE_PT_NONE;
+  /* Transform 1: 3DES (preferred). */
+  size_t t1 = o;
+  b[o++] = IKE_PT_T;
   b[o++] = 0;
-  size_t t_len_m = o;
+  size_t t1_len_m = o;
   o += 2;
   b[o++] = 1; /* transform # */
   b[o++] = 3; /* transform ID = 3DES-CBC */
   b[o++] = 0;
   b[o++] = 0;
-  memcpy(b + o, attrs_3des_sha1_dh14, sizeof(attrs_3des_sha1_dh14));
-  o += sizeof(attrs_3des_sha1_dh14);
-  util_write_be16(b + t_len_m, (uint16_t)(o - t0));
+  memcpy(b + o, attrs_3des, sizeof(attrs_3des));
+  o += sizeof(attrs_3des);
+  util_write_be16(b + t1_len_m, (uint16_t)(o - t1));
+
+  /* Transform 2: AES-128 (fallback for peer compatibility). */
+  size_t t2 = o;
+  b[o++] = IKE_PT_NONE;
+  b[o++] = 0;
+  size_t t2_len_m = o;
+  o += 2;
+  b[o++] = 2; /* transform # */
+  b[o++] = 1; /* transform ID = AES-CBC */
+  b[o++] = 0;
+  b[o++] = 0;
+  memcpy(b + o, attrs_aes, sizeof(attrs_aes));
+  o += sizeof(attrs_aes);
+  util_write_be16(b + t2_len_m, (uint16_t)(o - t2));
+
   util_write_be16(b + prop_len_m, (uint16_t)(o - prop0));
   return o;
 }
