@@ -35,36 +35,28 @@ jobs:
     name: flutter-checks
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
-
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-
       - name: Get dependencies
         run: flutter pub get
-
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib test
-
       - name: Analyze
         run: flutter analyze
-
       - name: Run unit and widget tests with coverage
         run: flutter test --coverage
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -77,11 +69,9 @@ jobs:
     name: native-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Run native tests
         run: sh tool/run_native_tests.sh
 
@@ -89,22 +79,18 @@ jobs:
     name: Android Go native tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version-file: android/gvisor/go.mod
           cache: true
           cache-dependency-path: android/gvisor/go.sum
-
       - name: Download Android Go module dependencies
         working-directory: android/gvisor
         run: go mod download
-
       - name: Run Android Go module tests
         working-directory: android/gvisor
         run: go test ./...
@@ -113,61 +99,49 @@ jobs:
     name: android-unit-tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-
       - name: Prepare Android Go dependencies
         uses: actions/setup-go@v5
         with:
           go-version-file: android/gvisor/go.mod
           cache: true
           cache-dependency-path: android/gvisor/go.sum
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
-
       - name: Get dependencies
         run: flutter pub get
-
       - name: Download Android Go module dependencies
         working-directory: android/gvisor
         run: go mod download
-
       - name: Create Android local.properties
         working-directory: android
         run: |
           flutter_root="${FLUTTER_ROOT:-$(dirname "$(dirname "$(command -v flutter)")")}"
           android_sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
-
           if [[ -z "${android_sdk_root}" ]]; then
             echo "ANDROID_SDK_ROOT or ANDROID_HOME must be set" >&2
             exit 1
           fi
-
           {
             echo "flutter.sdk=${flutter_root}"
             echo "sdk.dir=${android_sdk_root}"
           } > local.properties
-
       - name: Run Android JVM tests
         working-directory: android
         run: ./gradlew --no-daemon --console=plain --info --stacktrace -Dorg.gradle.vfs.watch=false :app:testDebugUnitTest
-
       - name: Upload Android test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1.2.1
@@ -176,7 +150,6 @@ jobs:
           files: android/app/build/test-results/testDebugUnitTest/*.xml
           report-type: test_results
           disable-search: true
-
       - name: Upload Android unit test reports
         if: failure()
         uses: actions/upload-artifact@v6
@@ -196,59 +169,48 @@ jobs:
       - native-tests
       - android-go-tests
       - android-unit-tests
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           ref: ${{ inputs.pr_number != '' && format('refs/pull/{0}/merge', inputs.pr_number) || github.ref }}
-
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-
       - name: Prepare Android Go dependencies
         uses: actions/setup-go@v5
         with:
           go-version-file: android/gvisor/go.mod
           cache: true
           cache-dependency-path: android/gvisor/go.sum
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
-
       - name: Get dependencies
         run: flutter pub get
-
       - name: Download Android Go module dependencies
         working-directory: android/gvisor
         run: go mod download
-
       - name: Create Android local.properties
         working-directory: android
         run: |
           flutter_root="${FLUTTER_ROOT:-$(dirname "$(dirname "$(command -v flutter)")")}"
           android_sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
-
           if [[ -z "${android_sdk_root}" ]]; then
             echo "ANDROID_SDK_ROOT or ANDROID_HOME must be set" >&2
             exit 1
           fi
-
           {
             echo "flutter.sdk=${flutter_root}"
             echo "sdk.dir=${android_sdk_root}"
           } > local.properties
-
       - name: Configure Android release signing
         if: github.event_name != 'pull_request' && inputs.pr_number == ''
         env:
@@ -258,29 +220,22 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           TUNNEL_FORGE_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/upload-keystore.jks
         run: |
-          for var in \
-            ANDROID_KEYSTORE_BASE64 \
-            ANDROID_KEYSTORE_PASSWORD \
-            ANDROID_KEY_ALIAS \
-            ANDROID_KEY_PASSWORD; do
+          for var in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
             if [[ -z "${!var}" ]]; then
               echo "Missing required GitHub Actions secret: ${var}" >&2
               exit 1
             fi
           done
-
           printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > "${TUNNEL_FORGE_ANDROID_KEYSTORE_PATH}"
           chmod 600 "${TUNNEL_FORGE_ANDROID_KEYSTORE_PATH}"
-
-      - name: Build release APK
+      - name: Build ARM64 release APK
         if: github.event_name != 'pull_request' && inputs.pr_number == ''
         env:
           TUNNEL_FORGE_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/upload-keystore.jks
           TUNNEL_FORGE_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           TUNNEL_FORGE_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           TUNNEL_FORGE_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: flutter build apk --release
-
+        run: flutter build apk --release --target-platform android-arm64
       - name: Upload APK
         if: github.event_name != 'pull_request' && inputs.pr_number == ''
         uses: actions/upload-artifact@v6
@@ -288,40 +243,24 @@ jobs:
           name: tunnel-forge-release-apk
           path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
-
       - name: Build reviewer APK
         if: github.event_name == 'pull_request' || inputs.pr_number != ''
         run: flutter build apk --debug
-
       - name: Verify reviewer APK
         if: github.event_name == 'pull_request' || inputs.pr_number != ''
         run: |
           android_sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
-
           if [[ -z "${android_sdk_root}" ]]; then
             echo "Android SDK root is not set" >&2
             exit 1
           fi
-
-          apksigner_path="$(
-            find "${android_sdk_root}/build-tools" \
-              -maxdepth 2 \
-              -type f \
-              -name apksigner \
-              -executable |
-              sort -V |
-              tail -n 1
-          )"
-
+          apksigner_path="$(find "${android_sdk_root}/build-tools" -maxdepth 2 -type f -name apksigner -executable | sort -V | tail -n 1)"
           if [[ -z "${apksigner_path}" ]]; then
             echo "apksigner not found under ${android_sdk_root}/build-tools" >&2
             exit 1
           fi
-
           echo "Using apksigner: ${apksigner_path}"
-          "${apksigner_path}" verify --verbose \
-            build/app/outputs/flutter-apk/app-debug.apk
-
+          "${apksigner_path}" verify --verbose build/app/outputs/flutter-apk/app-debug.apk
       - name: Upload reviewer APK
         if: github.event_name == 'pull_request' || inputs.pr_number != ''
         uses: actions/upload-artifact@v6
@@ -330,7 +269,6 @@ jobs:
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
           if-no-files-found: error
-
       - name: Upload build reports
         if: always()
         uses: actions/upload-artifact@v6
