@@ -814,120 +814,83 @@ static int isakmp_aes128_decrypt(const uint8_t key16[16], const uint8_t iv_in[16
 
 static size_t build_p1_sa(uint8_t *b, size_t cap) {
   size_t o = 0;
-  if (o + 8 + 120 > cap)
+  if (o + 8 + 80 > cap)
     return 0;
   util_write_be32(b + o, 1);
   o += 4;
   util_write_be32(b + o, 1);
   o += 4;
 
-  /* Group 0x000e = MODP2048 (RFC 3526), required by default Libreswan l2tp-psk (modp2048). */
-  static const uint8_t attrs_aes[] = {0x80, 0x01, 0x00, 0x07, 0x80, 0x0e, 0x00, 0x80, 0x80, 0x02,
-                                      0x00, 0x02, 0x80, 0x03, 0x00, 0x01, 0x80, 0x04, 0x00, 0x0e};
-  static const uint8_t attrs_3des[] = {0x80, 0x01, 0x00, 0x05, 0x80, 0x02, 0x00, 0x02,
-                                       0x80, 0x03, 0x00, 0x01, 0x80, 0x04, 0x00, 0x0e};
-
   /*
-   * One ISAKMP Proposal with two Transform payloads (AES then 3DES). Libreswan 5.x rejects
-   * two chained Proposal payloads inside the SA ("Proposal must be alone in Oakley SA").
+   * Force IKEv1 Main Mode to the server-required proposal:
+   * 3DES-CBC + HMAC-SHA1 + PSK + MODP2048 (DH group 14).
+   *
+   * Do not offer AES here. If AES is offered first, some peers select AES
+   * and the resulting APK no longer guarantees the requested 3DES profile.
    */
+  static const uint8_t attrs_3des_sha1_dh14[] = {
+      0x80, 0x01, 0x00, 0x05, /* ENCRYPTION_ALGORITHM = 3DES */
+      0x80, 0x02, 0x00, 0x02, /* HASH_ALGORITHM = SHA1 */
+      0x80, 0x03, 0x00, 0x01, /* AUTHENTICATION_METHOD = pre-shared key */
+      0x80, 0x04, 0x00, 0x0e  /* GROUP_DESCRIPTION = MODP2048 / DH14 */
+  };
+
   size_t prop0 = o;
   b[o++] = IKE_PT_NONE;
   b[o++] = 0;
   size_t prop_len_m = o;
   o += 2;
-  b[o++] = 1;
-  b[o++] = 1;
-  b[o++] = 0;
-  b[o++] = 2;
+  b[o++] = 1; /* proposal # */
+  b[o++] = 1; /* protocol = ISAKMP */
+  b[o++] = 0; /* SPI size */
+  b[o++] = 1; /* exactly one transform */
 
-  size_t t1s = o;
-  b[o++] = IKE_PT_T;
-  b[o++] = 0;
-  size_t t1_len_m = o;
-  o += 2;
-  b[o++] = 1;
-  b[o++] = 1;
-  b[o++] = 0;
-  b[o++] = 0;
-  memcpy(b + o, attrs_aes, sizeof(attrs_aes));
-  o += sizeof(attrs_aes);
-  util_write_be16(b + t1_len_m, (uint16_t)(o - t1s));
-
-  size_t t2s = o;
+  size_t t0 = o;
   b[o++] = IKE_PT_NONE;
   b[o++] = 0;
-  size_t t2_len_m = o;
+  size_t t_len_m = o;
   o += 2;
-  b[o++] = 2;
-  b[o++] = 1;
+  b[o++] = 1; /* transform # */
+  b[o++] = 3; /* transform ID = 3DES-CBC */
   b[o++] = 0;
   b[o++] = 0;
-  memcpy(b + o, attrs_3des, sizeof(attrs_3des));
-  o += sizeof(attrs_3des);
-  util_write_be16(b + t2_len_m, (uint16_t)(o - t2s));
+  memcpy(b + o, attrs_3des_sha1_dh14, sizeof(attrs_3des_sha1_dh14));
+  o += sizeof(attrs_3des_sha1_dh14);
+  util_write_be16(b + t_len_m, (uint16_t)(o - t0));
   util_write_be16(b + prop_len_m, (uint16_t)(o - prop0));
   return o;
 }
 
-// Build Phase 2 ESP SA payload body (DOI + Situation + Proposal + Transform).
-// Proposes AES-128-CBC (id=12) and 3DES-CBC (id=3), both with HMAC-SHA1-96 and transport mode.
-// Phase 2 SA attribute types are from the IPSEC DOI (RFC 2407 sec 4.5):
-//   type 4 = ENCAPSULATION_MODE (2=Transport)
-//   type 5 = AUTH_ALGORITHM    (2=HMAC-SHA1-96)
-//   type 6  = KEY_LENGTH        (128 for AES-128)
+// Build Phase 2 ESP SA payload body.
+// Force ESP 3DES-CBC + HMAC-SHA1-96 in UDP-encapsulated transport mode.
 static size_t build_p2_esp_sa(uint8_t *b, size_t cap, uint32_t spi_be) {
   size_t o = 0;
-  if (o + 56 > cap)
+  if (o + 40 > cap)
     return 0;
   util_write_be32(b + o, 1);
   o += 4; /* DOI = IPSEC (1) */
   util_write_be32(b + o, 1);
   o += 4; /* Situation = SIT_IDENTITY_ONLY (1) */
+
   size_t p0 = o;
   b[o++] = IKE_PT_NONE; /* next proposal */
-  b[o++] = 0;           /* reserved */
+  b[o++] = 0;
   size_t p_len_m = o;
   o += 2;
   b[o++] = 1; /* proposal # */
   b[o++] = 3; /* protocol = ESP */
   b[o++] = 4; /* SPI size */
-  b[o++] = 2; /* # transforms */
+  b[o++] = 1; /* exactly one transform */
   util_write_be32(b + o, spi_be);
   o += 4;
+
   size_t t0 = o;
-  b[o++] = IKE_PT_T; /* next transform */
-  b[o++] = 0; /* reserved */
+  b[o++] = IKE_PT_NONE;
+  b[o++] = 0;
   size_t t_len_m = o;
   o += 2;
-  b[o++] = 1;  /* transform # */
-  b[o++] = 12; /* transform ID = ESP_AES (12) */
-  b[o++] = 0;
-  b[o++] = 0; /* reserved */
-  // ENCAPSULATION_MODE = UDP-Encap-Transport (type 4, value 4; RFC 3947 sec 6)
-  b[o++] = 0x80;
-  b[o++] = 0x04;
-  b[o++] = 0x00;
-  b[o++] = 0x04;
-  /* AUTH_ALGORITHM = HMAC-SHA1-96 (type 5, value 2) */
-  b[o++] = 0x80;
-  b[o++] = 0x05;
-  b[o++] = 0x00;
-  b[o++] = 0x02;
-  /* KEY_LENGTH = 128 bits (IPsec DOI type 6, value 128) */
-  b[o++] = 0x80;
-  b[o++] = 0x06;
-  b[o++] = 0x00;
-  b[o++] = 0x80;
-  util_write_be16(b + t_len_m, (uint16_t)(o - t0));
-
-  size_t t1 = o;
-  b[o++] = IKE_PT_NONE; /* next transform = NONE */
-  b[o++] = 0;
-  size_t t1_len_m = o;
-  o += 2;
-  b[o++] = 2; /* transform # */
-  b[o++] = 3; /* transform ID = ESP_3DES (3) */
+  b[o++] = 1; /* transform # */
+  b[o++] = 3; /* transform ID = ESP_3DES */
   b[o++] = 0;
   b[o++] = 0;
   /* UDP-encapsulated transport mode. */
@@ -935,13 +898,13 @@ static size_t build_p2_esp_sa(uint8_t *b, size_t cap, uint32_t spi_be) {
   b[o++] = 0x04;
   b[o++] = 0x00;
   b[o++] = 0x04;
-  /* AUTH_ALGORITHM = HMAC-SHA1-96 (2). */
+  /* AUTH_ALGORITHM = HMAC-SHA1-96. */
   b[o++] = 0x80;
   b[o++] = 0x05;
   b[o++] = 0x00;
   b[o++] = 0x02;
-  /* RFC 2407: fixed-length ciphers omit the KEY_LENGTH attribute. */
-  util_write_be16(b + t1_len_m, (uint16_t)(o - t1));
+  /* RFC 2407: fixed-length 3DES omits KEY_LENGTH. */
+  util_write_be16(b + t_len_m, (uint16_t)(o - t0));
   util_write_be16(b + p_len_m, (uint16_t)(o - p0));
   return o;
 }
