@@ -72,7 +72,7 @@ jobs:
           app_version="$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)"
           expected_tag="v${app_version}"
 
-          if [[ "${tag}" != "${expected_tag}" ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" != "workflow_dispatch" && "${tag}" != "${expected_tag}" ]]; then
             echo "Tag ${tag} does not match pubspec version ${app_version}" >&2
             exit 1
           fi
