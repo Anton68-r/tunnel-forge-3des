@@ -89,6 +89,7 @@ class TunnelConnectRequest extends Equatable {
     required this.connectionMode,
     required this.splitTunnelSettings,
     required this.proxySettings,
+    this.advancedIkeIpsec = const AdvancedIkeIpsecSettings(),
   });
 
   final String attemptId;
@@ -104,6 +105,7 @@ class TunnelConnectRequest extends Equatable {
   final ConnectionMode connectionMode;
   final SplitTunnelSettings splitTunnelSettings;
   final ProxySettings proxySettings;
+  final AdvancedIkeIpsecSettings advancedIkeIpsec;
 
   @override
   List<Object?> get props => [
@@ -120,6 +122,7 @@ class TunnelConnectRequest extends Equatable {
     connectionMode,
     splitTunnelSettings,
     proxySettings,
+    advancedIkeIpsec,
   ];
 }
 
