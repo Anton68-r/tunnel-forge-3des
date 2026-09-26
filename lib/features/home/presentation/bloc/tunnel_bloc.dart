@@ -366,6 +366,7 @@ class TunnelBloc extends Bloc<TunnelEvent, TunnelState> {
           connectionMode: request.connectionMode,
           splitTunnelSettings: request.splitTunnelSettings,
           proxySettings: request.proxySettings,
+          advancedIkeIpsec: request.advancedIkeIpsec,
           attemptId: attemptId,
         ),
       );
