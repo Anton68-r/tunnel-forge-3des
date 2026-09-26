@@ -120,6 +120,13 @@ final class ProfileFormMtuChanged extends ProfileFormEvent {
   List<Object?> get props => [value];
 }
 
+final class ProfileFormAdvancedIkeIpsecChanged extends ProfileFormEvent {
+  const ProfileFormAdvancedIkeIpsecChanged(this.value);
+  final AdvancedIkeIpsecSettings value;
+  @override
+  List<Object?> get props => [value];
+}
+
 final class ProfileFormSaveRequested extends ProfileFormEvent {
   const ProfileFormSaveRequested();
 }
@@ -302,6 +309,11 @@ class ProfileFormBloc extends Bloc<ProfileFormEvent, ProfileFormState> {
     on<ProfileFormMtuChanged>(
       (event, emit) =>
           emit(state.copyWith(mtu: event.value.trim(), saved: false)),
+    );
+    on<ProfileFormAdvancedIkeIpsecChanged>(
+      (event, emit) => emit(
+        state.copyWith(advancedIkeIpsec: event.value, saved: false),
+      ),
     );
     on<ProfileFormSaveRequested>(_onSaveRequested);
   }
