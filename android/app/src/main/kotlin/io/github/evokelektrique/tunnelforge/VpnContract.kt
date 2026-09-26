@@ -33,6 +33,7 @@ object VpnContract {
     const val ARG_DNS_SERVER_HOST = "host"
     const val ARG_DNS_SERVER_PROTOCOL = "protocol"
     const val ARG_MTU = "mtu"
+    const val ARG_ADVANCED_IKE_IPSEC = "advancedIkeIpsec"
     const val ARG_PROFILE_NAME = "profileName"
     const val ARG_CONNECTION_MODE = "connectionMode"
     const val ARG_PROXY_HTTP_PORT = "proxyHttpPort"
