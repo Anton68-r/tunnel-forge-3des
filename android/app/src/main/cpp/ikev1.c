@@ -831,7 +831,7 @@ static size_t build_p1_sa(uint8_t *b, size_t cap) {
       0x80, 0x01, 0x00, 0x05, /* ENCRYPTION_ALGORITHM = 3DES */
       0x80, 0x02, 0x00, 0x02, /* HASH_ALGORITHM = SHA1 */
       0x80, 0x03, 0x00, 0x01, /* AUTHENTICATION_METHOD = pre-shared key */
-      0x80, 0x04, 0x00, 0x0e  /* GROUP_DESCRIPTION = MODP2048 / DH14 */
+      0x80, 0x04, 0x00, 0x02  /* GROUP_DESCRIPTION = MODP1024 / DH2 (diagnostic) */
   };
   static const uint8_t attrs_aes[] = {
       0x80, 0x01, 0x00, 0x07, /* ENCRYPTION_ALGORITHM = AES-128 */
