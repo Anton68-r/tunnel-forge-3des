@@ -1133,7 +1133,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   socklen_t l500 = sizeof(peer500);
   if (resolve_udp(server, initial_peer_port, &peer500, &l500) != 0) {
     mbedtls_ctr_drbg_free(&ctr);
-    mbedtls_entropy_free(&entropy);
+    mbedtls_entropy_free(&ctr);
     return -1;
   }
   ike_log_endpoint(forced_4500 ? "IKE peer:4500 (forced)" : "IKE peer:500", (struct sockaddr *)&peer500, l500);
@@ -1245,8 +1245,6 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     esp->udp_encap = 1;
     tunnel_engine_log(ANDROID_LOG_INFO, LOG_TAG, "IKE: Advanced IKE port forces UDP 4500 + non-ESP marker");
   }
-
-
 
   /* MM1: propose SA and advertise NAT-T capability via RFC 3947 VID. */
   o = 0;
@@ -2505,3 +2503,5 @@ int ikev1_connect(const char *server, const char *psk, ike_session_t *ike, esp_k
     return cleartext_l2tp(server, ike, esp);
   }
   tunnel_log("ikev1_connect: IPsec+IKE path psk_len=%zu", strlen(psk));
+  return ipsec_negotiate(server, psk, ike, esp);
+}
