@@ -46,6 +46,196 @@ class ProfileEditorSheet extends StatelessWidget {
     ).then((value) => value ?? false);
   }
 
+  Widget _advancedDropdown<T>({
+    required BuildContext context,
+    required String label,
+    required T value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return DropdownButtonFormField<T>(
+      value: value,
+      isExpanded: true,
+      decoration: _deco(context, label: label),
+      items: items,
+      onChanged: onChanged,
+    );
+  }
+
+  String _ikeEncryptionLabel(IkeEncryption value) => switch (value) {
+    IkeEncryption.auto => AppText.pick('Auto', 'خودکار'),
+    IkeEncryption.aes128 => 'AES-128',
+    IkeEncryption.threeDes => '3DES',
+  };
+
+  String _ikeHashLabel(IkeHash value) => switch (value) {
+    IkeHash.auto => AppText.pick('Auto', 'خودکار'),
+    IkeHash.sha1 => 'SHA-1',
+  };
+
+  String _dhLabel(IkeDhGroup value) => switch (value) {
+    IkeDhGroup.auto => AppText.pick('Auto', 'خودکار'),
+    IkeDhGroup.dh2 => 'DH Group 2 (MODP1024)',
+    IkeDhGroup.dh14 => 'DH Group 14 (MODP2048)',
+  };
+
+  String _proposalOrderLabel(IkeProposalOrder value) => switch (value) {
+    IkeProposalOrder.auto => AppText.pick('Auto', 'خودکار'),
+    IkeProposalOrder.aesThen3Des => 'AES → 3DES',
+    IkeProposalOrder.threeDesThenAes => '3DES → AES',
+  };
+
+  String _portLabel(IkePortMode value) => switch (value) {
+    IkePortMode.auto => AppText.pick('Auto', 'خودکار'),
+    IkePortMode.port500 => 'UDP 500',
+    IkePortMode.port4500 => 'UDP 4500',
+  };
+
+  String _natLabel(NatTraversalMode value) => switch (value) {
+    NatTraversalMode.auto => AppText.pick('Auto', 'خودکار'),
+    NatTraversalMode.disabled => AppText.pick('Off', 'خاموش'),
+    NatTraversalMode.enabled => AppText.pick('On', 'روشن'),
+  };
+
+  Widget _advancedSection(BuildContext context, ProfileFormState state) {
+    final t = AppLocalizations.of(context);
+    final a = state.advancedIkeIpsec;
+    final bloc = context.read<ProfileFormBloc>();
+
+    void update(AdvancedIkeIpsecSettings value) =>
+        bloc.add(ProfileFormAdvancedIkeIpsecChanged(value));
+
+    return Card(
+      key: const Key('advanced_ike_ipsec_section'),
+      child: ExpansionTile(
+        title: Text(AppText.pick('Advanced mode', 'حالت پیشرفته')),
+        subtitle: Text(
+          AppText.pick(
+            'IKE/IPsec parameters for this VPN profile',
+            'پارامترهای IKE/IPsec برای این پروفایل VPN',
+          ),
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: [
+          _advancedDropdown<IkeEncryption>(
+            context: context,
+            label: 'IKE Phase 1 encryption',
+            value: a.ikeEncryption,
+            items: IkeEncryption.values
+                .map((v) => DropdownMenuItem(value: v, child: Text(_ikeEncryptionLabel(v))))
+                .toList(growable: false),
+            onChanged: (v) => update(AdvancedIkeIpsecSettings(
+              ikeEncryption: v ?? a.ikeEncryption,
+              ikeHash: a.ikeHash,
+              ikeDhGroup: a.ikeDhGroup,
+              ikeProposalOrder: a.ikeProposalOrder,
+              ikePort: a.ikePort,
+              natTraversal: a.natTraversal,
+              espEncryption: a.espEncryption,
+              espHash: a.espHash,
+            )),
+          ),
+          const SizedBox(height: 12),
+          _advancedDropdown<IkeHash>(
+            context: context,
+            label: 'IKE Phase 1 hash',
+            value: a.ikeHash,
+            items: IkeHash.values.map((v) => DropdownMenuItem(value: v, child: Text(_ikeHashLabel(v)))).toList(growable: false),
+            onChanged: (v) => update(AdvancedIkeIpsecSettings(
+              ikeEncryption: a.ikeEncryption, ikeHash: v ?? a.ikeHash,
+              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
+              ikePort: a.ikePort, natTraversal: a.natTraversal,
+              espEncryption: a.espEncryption, espHash: a.espHash,
+            )),
+          ),
+          const SizedBox(height: 12),
+          _advancedDropdown<IkeDhGroup>(
+            context: context,
+            label: 'IKE DH group',
+            value: a.ikeDhGroup,
+            items: IkeDhGroup.values.map((v) => DropdownMenuItem(value: v, child: Text(_dhLabel(v)))).toList(growable: false),
+            onChanged: (v) => update(AdvancedIkeIpsecSettings(
+              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
+              ikeDhGroup: v ?? a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
+              ikePort: a.ikePort, natTraversal: a.natTraversal,
+              espEncryption: a.espEncryption, espHash: a.espHash,
+            )),
+          ),
+          const SizedBox(height: 12),
+          _advancedDropdown<IkeProposalOrder>(
+            context: context,
+            label: 'IKE proposal order',
+            value: a.ikeProposalOrder,
+            items: IkeProposalOrder.values.map((v) => DropdownMenuItem(value: v, child: Text(_proposalOrderLabel(v)))).toList(growable: false),
+            onChanged: (v) => update(AdvancedIkeIpsecSettings(
+              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
+              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: v ?? a.ikeProposalOrder,
+              ikePort: a.ikePort, natTraversal: a.natTraversal,
+              espEncryption: a.espEncryption, espHash: a.espHash,
+            )),
+          ),
+          const SizedBox(height: 12),
+          _advancedDropdown<IkePortMode>(
+            context: context,
+            label: 'IKE port',
+            value: a.ikePort,
+            items: IkePortMode.values.map((v) => DropdownMenuItem(value: v, child: Text(_portLabel(v)))).toList(growable: false),
+            onChanged: (v) => update(AdvancedIkeIpsecSettings(
+              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
+              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
+              ikePort: v ?? a.ikePort, natTraversal: a.natTraversal,
+              espEncryption: a.espEncryption, espHash: a.espHash,
+            )),
+          ),
+          const SizedBox(height: 12),
+          _advancedDropdown<NatTraversalMode>(
+            context: context,
+            label: 'NAT-T',
+            value: a.natTraversal,
+            items: NatTraversalMode.values.map((v) => DropdownMenuItem(value: v, child: Text(_natLabel(v)))).toList(growable: false),
+            onChanged: (v) => update(AdvancedIkeIpsecSettings(
+              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
+              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
+              ikePort: a.ikePort, natTraversal: v ?? a.natTraversal,
+              espEncryption: a.espEncryption, espHash: a.espHash,
+            )),
+          ),
+          const Divider(height: 28),
+          Text(
+            AppText.pick('Phase 2 / ESP', 'فاز ۲ / ESP'),
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 12),
+          _advancedDropdown<IkeEncryption>(
+            context: context,
+            label: 'ESP encryption',
+            value: a.espEncryption,
+            items: IkeEncryption.values.map((v) => DropdownMenuItem(value: v, child: Text(_ikeEncryptionLabel(v)))).toList(growable: false),
+            onChanged: (v) => update(AdvancedIkeIpsecSettings(
+              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
+              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
+              ikePort: a.ikePort, natTraversal: a.natTraversal,
+              espEncryption: v ?? a.espEncryption, espHash: a.espHash,
+            )),
+          ),
+          const SizedBox(height: 12),
+          _advancedDropdown<IkeHash>(
+            context: context,
+            label: 'ESP integrity',
+            value: a.espHash,
+            items: IkeHash.values.map((v) => DropdownMenuItem(value: v, child: Text(_ikeHashLabel(v)))).toList(growable: false),
+            onChanged: (v) => update(AdvancedIkeIpsecSettings(
+              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
+              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
+              ikePort: a.ikePort, natTraversal: a.natTraversal,
+              espEncryption: a.espEncryption, espHash: v ?? a.espHash,
+            )),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -480,6 +670,8 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
                               dnsSectionColor,
                             ),
                           ],
+                          const SizedBox(height: 12),
+                          _advancedSection(context, state),
                           const SizedBox(height: 12),
                           TextField(
                             key: const Key('mtu_field'),
