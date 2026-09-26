@@ -778,7 +778,9 @@ class Profile {
     if (id.isEmpty || server.isEmpty) return null;
     int mtu = defaultVpnMtu;
     final mtuRaw = m['mtu'];
-    final advancedIkeIpsec = AdvancedIkeIpsecSettings.fromJson(m['advancedIkeIpsec']);
+    final advancedIkeIpsec = AdvancedIkeIpsecSettings.fromJson(
+      m['advancedIkeIpsec'],
+    );
     final parsedDns1Protocol = DnsProtocol.fromJson(dns1Protocol);
     final parsedDns2Protocol = DnsProtocol.fromJson(dns2Protocol);
     if (mtuRaw is int) {
