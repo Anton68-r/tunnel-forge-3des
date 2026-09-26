@@ -1133,7 +1133,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   socklen_t l500 = sizeof(peer500);
   if (resolve_udp(server, initial_peer_port, &peer500, &l500) != 0) {
     mbedtls_ctr_drbg_free(&ctr);
-    mbedtls_entropy_free(&ctr);
+    mbedtls_entropy_free(&entropy);
     return -1;
   }
   ike_log_endpoint(forced_4500 ? "IKE peer:4500 (forced)" : "IKE peer:500", (struct sockaddr *)&peer500, l500);
