@@ -52,6 +52,10 @@ void tunnel_set_advanced_ike_ipsec_settings(const int *values, size_t count) {
                     values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
 }
 
+const advanced_ike_ipsec_settings_t *tunnel_get_advanced_ike_ipsec_settings(void) {
+  return &g_advanced_ike_ipsec;
+}
+
 static struct {
   ike_session_t ike;
   esp_keys_t esp;
