@@ -238,6 +238,10 @@ class MainActivity : FlutterActivity() {
                                 putExtra(TunnelVpnService.EXTRA_DNS_AUTOMATIC, dnsAutomatic)
                                 putDnsServerExtras(this, dnsServers)
                                 putExtra(TunnelVpnService.EXTRA_MTU, mtu)
+                                putExtra(
+                                    TunnelVpnService.EXTRA_ADVANCED_IKE_IPSEC,
+                                    parseAdvancedIkeIpsec(advancedIkeIpsec),
+                                )
                                 putExtra(TunnelVpnService.EXTRA_PROFILE_NAME, profileName)
                                 putExtra(TunnelVpnService.EXTRA_SPLIT_TUNNEL_ENABLED, splitTunnelEnabled)
                                 putExtra(TunnelVpnService.EXTRA_SPLIT_TUNNEL_MODE, splitTunnelMode)
