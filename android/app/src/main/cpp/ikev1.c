@@ -1124,24 +1124,42 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     return -1;
   }
 
+  const advanced_ike_ipsec_settings_t *ike_settings = tunnel_get_advanced_ike_ipsec_settings();
+  int forced_port = ike_settings->ike_port;
+  uint16_t initial_peer_port = forced_port == 2 ? NAT_T_PORT : IKE_PORT;
+  int forced_4500 = forced_port == 2;
+
   struct sockaddr_storage peer500;
   socklen_t l500 = sizeof(peer500);
-  if (resolve_udp(server, IKE_PORT, &peer500, &l500) != 0) {
+  if (resolve_udp(server, initial_peer_port, &peer500, &l500) != 0) {
     mbedtls_ctr_drbg_free(&ctr);
     mbedtls_entropy_free(&entropy);
     return -1;
   }
-  ike_log_endpoint("IKE peer:500", (struct sockaddr *)&peer500, l500);
+  ike_log_endpoint(forced_4500 ? "IKE peer:4500 (forced)" : "IKE peer:500", (struct sockaddr *)&peer500, l500);
 
   int fd = socket(peer500.ss_family, SOCK_DGRAM, IPPROTO_UDP);
   if (fd < 0) {
-    tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: socket(500) errno=%d", errno);
+    tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: socket initial port=%u errno=%d", (unsigned)initial_peer_port, errno);
     goto fail_early;
   }
   if (util_protect_fd(fd) != 0)
     goto fail_fd;
+  if (forced_port != 0) {
+    struct sockaddr_storage local_bind;
+    memset(&local_bind, 0, sizeof(local_bind));
+    struct sockaddr_in *lb = (struct sockaddr_in *)&local_bind;
+    lb->sin_family = AF_INET;
+    lb->sin_addr.s_addr = htonl(INADDR_ANY);
+    lb->sin_port = htons(initial_peer_port);
+    if (bind(fd, (struct sockaddr *)lb, sizeof(*lb)) != 0) {
+      tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: bind(local UDP %u) errno=%d", (unsigned)initial_peer_port, errno);
+      goto fail_fd;
+    }
+    tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG, "IKE: forced local UDP port=%u", (unsigned)initial_peer_port);
+  }
   if (connect(fd, (struct sockaddr *)&peer500, l500) != 0) {
-    tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: connect(500) errno=%d", errno);
+    tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: connect(initial port=%u) errno=%d", (unsigned)initial_peer_port, errno);
     goto fail_fd;
   }
 
@@ -1222,7 +1240,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   struct sockaddr_storage peer_active;
   socklen_t peer_active_len = l500;
   memcpy(&peer_active, &peer500, l500);
-  int p1_prefix = 0;
+  int p1_prefix = forced_4500 ? 1 : 0;\n  if (forced_4500) {\n    esp->udp_encap = 1;\n    tunnel_engine_log(ANDROID_LOG_INFO, LOG_TAG, "IKE: Advanced IKE port forces UDP 4500 + non-ESP marker");\n  }
 
   /* MM1: propose SA and advertise NAT-T capability via RFC 3947 VID. */
   o = 0;
@@ -1256,8 +1274,8 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
 
   tunnel_log("IKE Main Mode msg1 -> %zu bytes (transport=%s)", o, p1_prefix ? "UDP4500+marker" : "UDP500");
   inlen = ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 8000, p1_prefix);
-  if (inlen < 28) {
-    /* No usable MM2 reply on UDP/500: retry full MM1 over UDP/4500 + non-ESP marker. */
+  if (inlen < 28 && !forced_4500) {
+    /* Auto / forced UDP500: if MM2 is silent, retry full MM1 over UDP/4500 + non-ESP marker. */
     tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG,
                       "IKE MM1: no reply on UDP 500, retrying via NAT-T UDP 4500 (RFC 3947 non-ESP marker)");
     close(fd);
@@ -2469,4 +2487,3 @@ int ikev1_connect(const char *server, const char *psk, ike_session_t *ike, esp_k
   tunnel_log("ikev1_connect: IPsec+IKE path psk_len=%zu", strlen(psk));
   return ipsec_negotiate(server, psk, ike, esp);
 }
-
