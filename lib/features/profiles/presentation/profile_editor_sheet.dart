@@ -213,7 +213,12 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             label: 'IKE Phase 1 encryption',
             value: a.ikeEncryption,
             items: IkeEncryption.values
-                .map((v) => DropdownMenuItem(value: v, child: Text(_ikeEncryptionLabel(v))))
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_ikeEncryptionLabel(v)),
+                  ),
+                )
                 .toList(growable: false),
             onChanged: (v) => update(AdvancedIkeIpsecSettings(
               ikeEncryption: v ?? a.ikeEncryption,
@@ -231,7 +236,14 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             context: context,
             label: 'IKE Phase 1 hash',
             value: a.ikeHash,
-            items: IkeHash.values.map((v) => DropdownMenuItem(value: v, child: Text(_ikeHashLabel(v)))).toList(growable: false),
+            items: IkeHash.values
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_ikeHashLabel(v)),
+                  ),
+                )
+                .toList(growable: false),
             onChanged: (v) => update(AdvancedIkeIpsecSettings(
               ikeEncryption: a.ikeEncryption, ikeHash: v ?? a.ikeHash,
               ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
@@ -244,7 +256,14 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             context: context,
             label: 'IKE DH group',
             value: a.ikeDhGroup,
-            items: IkeDhGroup.values.map((v) => DropdownMenuItem(value: v, child: Text(_dhLabel(v)))).toList(growable: false),
+            items: IkeDhGroup.values
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_dhLabel(v)),
+                  ),
+                )
+                .toList(growable: false),
             onChanged: (v) => update(AdvancedIkeIpsecSettings(
               ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
               ikeDhGroup: v ?? a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
@@ -257,7 +276,14 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             context: context,
             label: 'IKE proposal order',
             value: a.ikeProposalOrder,
-            items: IkeProposalOrder.values.map((v) => DropdownMenuItem(value: v, child: Text(_proposalOrderLabel(v)))).toList(growable: false),
+            items: IkeProposalOrder.values
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_proposalOrderLabel(v)),
+                  ),
+                )
+                .toList(growable: false),
             onChanged: (v) => update(AdvancedIkeIpsecSettings(
               ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
               ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: v ?? a.ikeProposalOrder,
@@ -270,7 +296,14 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             context: context,
             label: 'IKE port',
             value: a.ikePort,
-            items: IkePortMode.values.map((v) => DropdownMenuItem(value: v, child: Text(_portLabel(v)))).toList(growable: false),
+            items: IkePortMode.values
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_portLabel(v)),
+                  ),
+                )
+                .toList(growable: false),
             onChanged: (v) => update(AdvancedIkeIpsecSettings(
               ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
               ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
@@ -283,7 +316,14 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             context: context,
             label: 'NAT-T',
             value: a.natTraversal,
-            items: NatTraversalMode.values.map((v) => DropdownMenuItem(value: v, child: Text(_natLabel(v)))).toList(growable: false),
+            items: NatTraversalMode.values
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_natLabel(v)),
+                  ),
+                )
+                .toList(growable: false),
             onChanged: (v) => update(AdvancedIkeIpsecSettings(
               ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
               ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
@@ -314,7 +354,14 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             context: context,
             label: 'ESP integrity',
             value: a.espHash,
-            items: IkeHash.values.map((v) => DropdownMenuItem(value: v, child: Text(_ikeHashLabel(v)))).toList(growable: false),
+            items: IkeHash.values
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_ikeHashLabel(v)),
+                  ),
+                )
+                .toList(growable: false),
             onChanged: (v) => update(AdvancedIkeIpsecSettings(
               ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
               ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
