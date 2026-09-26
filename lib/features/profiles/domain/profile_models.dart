@@ -499,6 +499,18 @@ class AdvancedIkeIpsecSettings {
   final IkeEncryption espEncryption;
   final IkeHash espHash;
 
+  /// Native bridge order: enc, hash, DH, proposal order, port, NAT-T, ESP enc, ESP hash.
+  List<int> toNativeValues() => [
+    ikeEncryption.index,
+    ikeHash.index,
+    ikeDhGroup.index,
+    ikeProposalOrder.index,
+    ikePort.index,
+    natTraversal.index,
+    espEncryption.index,
+    espHash.index,
+  ];
+
   Map<String, dynamic> toJson() => {
     'ikeEncryption': ikeEncryption.jsonValue,
     'ikeHash': ikeHash.jsonValue,
