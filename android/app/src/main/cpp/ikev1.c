@@ -824,9 +824,8 @@ static size_t build_p1_sa(uint8_t *b, size_t cap) {
   o += 4;
 
   /*
-   * DIAGNOSTIC ONLY: offer 3DES first, then AES in the same ISAKMP proposal.
-   * This tests whether the peer requires a multi-transform proposal while
-   * keeping 3DES as the first/most preferred transform.
+   * DIAGNOSTIC ONLY: match the original TunnelForge Phase 1 transform order:
+   * AES first, then 3DES in the same ISAKMP proposal.
    */
   static const uint8_t attrs_3des[] = {
       0x80, 0x01, 0x00, 0x05, /* ENCRYPTION_ALGORITHM = 3DES */
@@ -852,7 +851,7 @@ static size_t build_p1_sa(uint8_t *b, size_t cap) {
   b[o++] = 0; /* SPI size */
   b[o++] = 2; /* two transforms */
 
-  /* Transform 1: 3DES (preferred). */
+  /* Transform 1: AES-128 (original TunnelForge order). */
   size_t t1 = o;
   b[o++] = IKE_PT_T;
   b[o++] = 0;
@@ -866,7 +865,7 @@ static size_t build_p1_sa(uint8_t *b, size_t cap) {
   o += sizeof(attrs_3des);
   util_write_be16(b + t1_len_m, (uint16_t)(o - t1));
 
-  /* Transform 2: AES-128 (fallback for peer compatibility). */
+  /* Transform 2: 3DES (original TunnelForge order). */
   size_t t2 = o;
   b[o++] = IKE_PT_NONE;
   b[o++] = 0;
