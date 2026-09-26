@@ -129,6 +129,7 @@ class ProxyTunnelService : Service() {
                             profileName = profileName,
                             proxyConfig = proxyConfig,
                             proxyMtu = proxyMtu,
+                            advancedIkeIpsec = advancedIkeIpsec,
                         )
                     },
                     "proxy-negotiation",
@@ -156,6 +157,7 @@ class ProxyTunnelService : Service() {
         profileName: String,
         proxyConfig: ProxyRuntimeConfig,
         proxyMtu: Int,
+        advancedIkeIpsec: IntArray,
     ) {
         val label = profileName.ifEmpty { server }
         val currentWorker = Thread.currentThread()
