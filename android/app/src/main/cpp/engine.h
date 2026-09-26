@@ -39,6 +39,20 @@ void engine_set_socket_protection_enabled(int enabled);
 int tunnel_loop_run(int tun_fd, const char *server, const char *user, const char *password, const char *psk,
                     int tun_mtu);
 
+/** Advanced IKE/IPsec profile settings passed from Kotlin. Zero means Auto for every field. */
+typedef struct {
+  int ike_encryption;
+  int ike_hash;
+  int ike_dh_group;
+  int ike_proposal_order;
+  int ike_port;
+  int nat_traversal;
+  int esp_encryption;
+  int esp_hash;
+} advanced_ike_ipsec_settings_t;
+
+void tunnel_set_advanced_ike_ipsec_settings(const int *values, size_t count);
+
 /** Phase 1: IKE + L2TP + PPP negotiation (no TUN fd needed). Call before VPN establish(). */
 int tunnel_negotiate(const char *server, const char *user, const char *password, const char *psk, int tun_mtu);
 
