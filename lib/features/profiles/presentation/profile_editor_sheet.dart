@@ -46,6 +46,97 @@ class ProfileEditorSheet extends StatelessWidget {
     ).then((value) => value ?? false);
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          ProfileFormBloc(ProfilesRepositoryImpl(store))
+            ..add(ProfileFormStarted(profileId)),
+      child: ProfileEditorView(
+        onClose: () => Navigator.of(context).pop(false),
+        onSaved: (_) => Navigator.of(context).pop(true),
+      ),
+    );
+  }
+}
+
+class ProfileEditorView extends StatefulWidget {
+  const ProfileEditorView({
+    super.key,
+    required this.onClose,
+    required this.onSaved,
+  });
+
+  final VoidCallback onClose;
+  final ValueChanged<String> onSaved;
+
+  @override
+  State<ProfileEditorView> createState() => _ProfileEditorViewState();
+}
+
+class _ProfileEditorViewState extends State<ProfileEditorView> {
+  static const double _kDnsControlHeight = 56;
+  late final TextEditingController _displayNameController;
+  late final TextEditingController _serverController;
+  late final TextEditingController _userController;
+  late final TextEditingController _passwordController;
+  late final TextEditingController _pskController;
+  late final TextEditingController _dns1Controller;
+  late final TextEditingController _dns2Controller;
+  late final TextEditingController _mtuController;
+  bool _passwordVisible = false;
+  bool _pskVisible = false;
+  int _lastMessageId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayNameController = TextEditingController();
+    _serverController = TextEditingController();
+    _userController = TextEditingController();
+    _passwordController = TextEditingController();
+    _pskController = TextEditingController();
+    _dns1Controller = TextEditingController();
+    _dns2Controller = TextEditingController();
+    _mtuController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    _serverController.dispose();
+    _userController.dispose();
+    _passwordController.dispose();
+    _pskController.dispose();
+    _dns1Controller.dispose();
+    _dns2Controller.dispose();
+    _mtuController.dispose();
+    super.dispose();
+  }
+
+  void _syncController(TextEditingController controller, String value) {
+    if (controller.text == value) return;
+    controller.value = TextEditingValue(
+      text: value,
+      selection: TextSelection.collapsed(offset: value.length),
+    );
+  }
+
+  InputDecoration _deco(BuildContext context, {String? label, String? hint}) {
+    final cs = Theme.of(context).colorScheme;
+    final radius = BorderRadius.circular(8);
+    final border = OutlineInputBorder(borderRadius: radius);
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      border: border,
+      enabledBorder: border,
+      focusedBorder: border.copyWith(
+        borderSide: BorderSide(color: cs.primary, width: 2),
+      ),
+    );
+  }
+
   Widget _advancedDropdown<T>({
     required BuildContext context,
     required String label,
@@ -236,96 +327,6 @@ class ProfileEditorSheet extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) =>
-          ProfileFormBloc(ProfilesRepositoryImpl(store))
-            ..add(ProfileFormStarted(profileId)),
-      child: ProfileEditorView(
-        onClose: () => Navigator.of(context).pop(false),
-        onSaved: (_) => Navigator.of(context).pop(true),
-      ),
-    );
-  }
-}
-
-class ProfileEditorView extends StatefulWidget {
-  const ProfileEditorView({
-    super.key,
-    required this.onClose,
-    required this.onSaved,
-  });
-
-  final VoidCallback onClose;
-  final ValueChanged<String> onSaved;
-
-  @override
-  State<ProfileEditorView> createState() => _ProfileEditorViewState();
-}
-
-class _ProfileEditorViewState extends State<ProfileEditorView> {
-  static const double _kDnsControlHeight = 56;
-  late final TextEditingController _displayNameController;
-  late final TextEditingController _serverController;
-  late final TextEditingController _userController;
-  late final TextEditingController _passwordController;
-  late final TextEditingController _pskController;
-  late final TextEditingController _dns1Controller;
-  late final TextEditingController _dns2Controller;
-  late final TextEditingController _mtuController;
-  bool _passwordVisible = false;
-  bool _pskVisible = false;
-  int _lastMessageId = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _displayNameController = TextEditingController();
-    _serverController = TextEditingController();
-    _userController = TextEditingController();
-    _passwordController = TextEditingController();
-    _pskController = TextEditingController();
-    _dns1Controller = TextEditingController();
-    _dns2Controller = TextEditingController();
-    _mtuController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _displayNameController.dispose();
-    _serverController.dispose();
-    _userController.dispose();
-    _passwordController.dispose();
-    _pskController.dispose();
-    _dns1Controller.dispose();
-    _dns2Controller.dispose();
-    _mtuController.dispose();
-    super.dispose();
-  }
-
-  void _syncController(TextEditingController controller, String value) {
-    if (controller.text == value) return;
-    controller.value = TextEditingValue(
-      text: value,
-      selection: TextSelection.collapsed(offset: value.length),
-    );
-  }
-
-  InputDecoration _deco(BuildContext context, {String? label, String? hint}) {
-    final cs = Theme.of(context).colorScheme;
-    final radius = BorderRadius.circular(8);
-    final border = OutlineInputBorder(borderRadius: radius);
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      border: border,
-      enabledBorder: border,
-      focusedBorder: border.copyWith(
-        borderSide: BorderSide(color: cs.primary, width: 2),
-      ),
-    );
-  }
 
   Widget _secretField({
     required BuildContext context,
