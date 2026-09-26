@@ -872,8 +872,14 @@ static size_t build_p1_sa(uint8_t *b, size_t cap) {
 // Build Phase 2 ESP SA payload body.
 // Force ESP 3DES-CBC + HMAC-SHA1-96 in UDP-encapsulated transport mode.
 static size_t build_p2_esp_sa(uint8_t *b, size_t cap, uint32_t spi_be) {
+  const advanced_ike_ipsec_settings_t *s = tunnel_get_advanced_ike_ipsec_settings();
+  int enc = s->esp_encryption;
+  if (enc == 0)
+    enc = 2; /* Auto: legacy 3DES. */
+  const int use_aes = (enc == 1);
+
   size_t o = 0;
-  if (o + 40 > cap)
+  if (o + 48 > cap)
     return 0;
   util_write_be32(b + o, 1);
   o += 4; /* DOI = IPSEC (1) */
@@ -881,11 +887,11 @@ static size_t build_p2_esp_sa(uint8_t *b, size_t cap, uint32_t spi_be) {
   o += 4; /* Situation = SIT_IDENTITY_ONLY (1) */
 
   size_t p0 = o;
-  b[o++] = IKE_PT_NONE; /* next proposal */
+  b[o++] = IKE_PT_NONE;
   b[o++] = 0;
   size_t p_len_m = o;
   o += 2;
-  b[o++] = 1; /* proposal # */
+  b[o++] = 1;
   b[o++] = 3; /* protocol = ESP */
   b[o++] = 4; /* SPI size */
   b[o++] = 1; /* exactly one transform */
@@ -898,9 +904,18 @@ static size_t build_p2_esp_sa(uint8_t *b, size_t cap, uint32_t spi_be) {
   size_t t_len_m = o;
   o += 2;
   b[o++] = 1; /* transform # */
-  b[o++] = 3; /* transform ID = ESP_3DES */
+  b[o++] = use_aes ? 12 : 3; /* ESP_AES / ESP_3DES-CBC */
   b[o++] = 0;
   b[o++] = 0;
+
+  if (use_aes) {
+    /* AES-CBC with a 128-bit key. */
+    b[o++] = 0x80;
+    b[o++] = 0x0e;
+    b[o++] = 0x00;
+    b[o++] = 0x80;
+  }
+
   /* UDP-encapsulated transport mode. */
   b[o++] = 0x80;
   b[o++] = 0x04;
@@ -911,7 +926,7 @@ static size_t build_p2_esp_sa(uint8_t *b, size_t cap, uint32_t spi_be) {
   b[o++] = 0x05;
   b[o++] = 0x00;
   b[o++] = 0x02;
-  /* RFC 2407: fixed-length 3DES omits KEY_LENGTH. */
+
   util_write_be16(b + t_len_m, (uint16_t)(o - t0));
   util_write_be16(b + p_len_m, (uint16_t)(o - p0));
   return o;
@@ -2454,3 +2469,4 @@ int ikev1_connect(const char *server, const char *psk, ike_session_t *ike, esp_k
   tunnel_log("ikev1_connect: IPsec+IKE path psk_len=%zu", strlen(psk));
   return ipsec_negotiate(server, psk, ike, esp);
 }
+
