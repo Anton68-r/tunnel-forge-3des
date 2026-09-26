@@ -145,7 +145,7 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
     required ValueChanged<T?> onChanged,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
       decoration: _deco(context, label: label),
       items: items,
@@ -189,7 +189,6 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
   };
 
   Widget _advancedSection(BuildContext context, ProfileFormState state) {
-    final t = AppLocalizations.of(context);
     final a = state.advancedIkeIpsec;
     final bloc = context.read<ProfileFormBloc>();
 
