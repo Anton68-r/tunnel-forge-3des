@@ -141,6 +141,7 @@ class TunnelVpnService : VpnService() {
                 val dnsAutomatic = intent.getBooleanExtra(EXTRA_DNS_AUTOMATIC, true)
                 val dnsServers = manualDnsServersFromIntent(intent)
                 val tunMtu = sanitizeMtu(intent.getIntExtra(EXTRA_MTU, DEFAULT_TUN_MTU))
+                val advancedIkeIpsec = intent.getIntArrayExtra(EXTRA_ADVANCED_IKE_IPSEC) ?: IntArray(8)
                 val profileName = intent.getStringExtra(EXTRA_PROFILE_NAME)?.trim().orEmpty()
                 val splitTunnelEnabled = intent.getBooleanExtra(EXTRA_SPLIT_TUNNEL_ENABLED, false)
                 val splitTunnelMode =
@@ -386,6 +387,7 @@ class TunnelVpnService : VpnService() {
             val negotiatedClientIp = IntArray(4)
             val negotiatedPrimaryDns = IntArray(4)
             val negotiatedSecondaryDns = IntArray(4)
+            VpnBridge.nativeSetAdvancedIkeIpsecSettings(advancedIkeIpsec)
             val negResult =
                 VpnBridge.nativeNegotiate(
                     server,
@@ -980,6 +982,7 @@ class TunnelVpnService : VpnService() {
         const val EXTRA_DNS_SERVER_2_HOST = "dnsServer2Host"
         const val EXTRA_DNS_SERVER_2_PROTOCOL = "dnsServer2Protocol"
         const val EXTRA_MTU = "mtu"
+        const val EXTRA_ADVANCED_IKE_IPSEC = "advancedIkeIpsec"
         const val EXTRA_PROFILE_NAME = "profileName"
         const val EXTRA_SPLIT_TUNNEL_ENABLED = "splitTunnelEnabled"
         const val EXTRA_SPLIT_TUNNEL_MODE = "splitTunnelMode"
