@@ -27,6 +27,10 @@ object VpnBridge {
         outSecondaryDnsIpv4: IntArray?,
     ): Int
 
+    /** Configure per-profile IKE/IPsec advanced settings. All values 0 mean Auto. */
+    @JvmStatic
+    external fun nativeSetAdvancedIkeIpsecSettings(settings: IntArray)
+
     @JvmStatic
     external fun nativeSetSocketProtectionEnabled(enabled: Boolean)
 
