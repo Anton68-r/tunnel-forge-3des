@@ -36,7 +36,8 @@ static unsigned s_ike_keymat_variants_log_once;
 #endif
 
 // IKE DH group 14 (MODP2048): must match Phase 1 proposal and mbedtls_mpi_read_binary below.
-#define IKE_DH_PUBKEY_BYTES 256
+#define IKE_DH_PUBKEY_BYTES_DH2 128
+#define IKE_DH_PUBKEY_BYTES_DH14 256
 
 /* --- Diagnostics, sockets, ISAKMP crypto primitives (shared by Main and Quick Mode) --- */
 
@@ -129,6 +130,17 @@ static void ike_log_endpoint(const char *tag, const struct sockaddr *sa, socklen
 }
 
 extern const uint8_t rfc3526_modp2048_p[256];
+
+static const uint8_t rfc2409_modp1024_p[128] = {
+    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xC9,0x0F,0xDA,0xA2,0x21,0x68,0xC2,0x34,
+    0xC4,0xC6,0x62,0x8B,0x80,0xDC,0x1C,0xD1,0x29,0x02,0x4E,0x08,0x8A,0x67,0xCC,0x74,
+    0x02,0x0B,0xBE,0xA6,0x3B,0x13,0x9B,0x22,0x51,0x4A,0x08,0x79,0x8E,0x34,0x04,0xDD,
+    0xEF,0x95,0x19,0xB3,0xCD,0x3A,0x43,0x1B,0x30,0x2B,0x0A,0x6D,0xF2,0x5F,0x14,0x37,
+    0x4F,0xE1,0x35,0x6D,0x6D,0x51,0xC2,0x45,0xE4,0x85,0xB5,0x76,0x62,0x5E,0x7E,0xC6,
+    0xF4,0x4C,0x42,0xE9,0xA6,0x37,0xED,0x6B,0x0B,0xFF,0x5C,0xB6,0xF4,0x06,0xB7,0xED,
+    0xEE,0x38,0x6B,0xFB,0x5A,0x89,0x9F,0xA5,0xAE,0x9F,0x24,0x11,0x7C,0x4B,0x1F,0xE6,
+    0x49,0x28,0x66,0x51,0xEC,0xE5,0x3E,0x81,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF
+};
 
 static const uint8_t k_vid_rfc3947[IKE_VID_RFC3947_LEN] = {0x4a, 0x13, 0x1c, 0x81, 0x07, 0x03, 0x58, 0x45,
                                                            0x5c, 0x57, 0x28, 0xf2, 0x0e, 0x95, 0x45, 0x2f};
@@ -815,70 +827,44 @@ static int isakmp_aes128_decrypt(const uint8_t key16[16], const uint8_t iv_in[16
 }
 
 static size_t build_p1_sa(uint8_t *b, size_t cap) {
-  size_t o = 0;
-  if (o + 8 + 120 > cap)
-    return 0;
-  util_write_be32(b + o, 1);
-  o += 4;
-  util_write_be32(b + o, 1);
-  o += 4;
+  const advanced_ike_ipsec_settings_t *s = tunnel_get_advanced_ike_ipsec_settings();
+  int enc = s->ike_encryption;
+  int dh = s->ike_dh_group;
+  if (enc == 0) enc = 2; /* Auto: legacy 3DES profile for this diagnostic client. */
+  if (dh == 0) dh = (enc == 2) ? 1 : 2;
 
-  /*
-   * DIAGNOSTIC ONLY: match the original TunnelForge Phase 1 transform order:
-   * AES first, then 3DES in the same ISAKMP proposal.
-   */
-  static const uint8_t attrs_3des[] = {
-      0x80, 0x01, 0x00, 0x05, /* ENCRYPTION_ALGORITHM = 3DES */
-      0x80, 0x02, 0x00, 0x02, /* HASH_ALGORITHM = SHA1 */
-      0x80, 0x03, 0x00, 0x01, /* AUTHENTICATION_METHOD = pre-shared key */
-      0x80, 0x04, 0x00, 0x02  /* GROUP_DESCRIPTION = MODP1024 / DH2 (diagnostic) */
-  };
-  static const uint8_t attrs_aes[] = {
-      0x80, 0x01, 0x00, 0x07, /* ENCRYPTION_ALGORITHM = AES-128 */
-      0x80, 0x0e, 0x00, 0x80, /* KEY_LENGTH = 128 bits */
-      0x80, 0x02, 0x00, 0x02, /* HASH_ALGORITHM = SHA1 */
-      0x80, 0x03, 0x00, 0x01, /* AUTHENTICATION_METHOD = pre-shared key */
-      0x80, 0x04, 0x00, 0x0e  /* GROUP_DESCRIPTION = MODP2048 / DH14 */
-  };
+  const int use_aes = (enc == 1);
+  const uint16_t dh_attr = (dh == 1) ? 0x0002 : 0x000e;
+  const uint8_t enc_attr = use_aes ? 0x07 : 0x05;
+
+  size_t o = 0;
+  if (o + 8 + 80 > cap)
+    return 0;
+  util_write_be32(b + o, 1); o += 4;
+  util_write_be32(b + o, 1); o += 4;
 
   size_t prop0 = o;
-  b[o++] = IKE_PT_NONE;
-  b[o++] = 0;
-  size_t prop_len_m = o;
-  o += 2;
-  b[o++] = 1; /* proposal # */
-  b[o++] = 1; /* protocol = ISAKMP */
-  b[o++] = 0; /* SPI size */
-  b[o++] = 2; /* two transforms */
+  b[o++] = IKE_PT_NONE; b[o++] = 0;
+  size_t prop_len_m = o; o += 2;
+  b[o++] = 1; b[o++] = 1; b[o++] = 0; b[o++] = 1;
 
-  /* Transform 1: AES-128 (original TunnelForge order). */
-  size_t t1 = o;
-  b[o++] = IKE_PT_T;
-  b[o++] = 0;
-  size_t t1_len_m = o;
-  o += 2;
-  b[o++] = 1; /* transform # */
-  b[o++] = 3; /* transform ID = 3DES-CBC */
-  b[o++] = 0;
-  b[o++] = 0;
-  memcpy(b + o, attrs_3des, sizeof(attrs_3des));
-  o += sizeof(attrs_3des);
-  util_write_be16(b + t1_len_m, (uint16_t)(o - t1));
+  size_t t0 = o;
+  b[o++] = IKE_PT_NONE; b[o++] = 0;
+  size_t t_len_m = o; o += 2;
+  b[o++] = 1;
+  b[o++] = use_aes ? 1 : 3;
+  b[o++] = 0; b[o++] = 0;
 
-  /* Transform 2: 3DES (original TunnelForge order). */
-  size_t t2 = o;
-  b[o++] = IKE_PT_NONE;
-  b[o++] = 0;
-  size_t t2_len_m = o;
-  o += 2;
-  b[o++] = 2; /* transform # */
-  b[o++] = 1; /* transform ID = AES-CBC */
-  b[o++] = 0;
-  b[o++] = 0;
-  memcpy(b + o, attrs_aes, sizeof(attrs_aes));
-  o += sizeof(attrs_aes);
-  util_write_be16(b + t2_len_m, (uint16_t)(o - t2));
+  b[o++] = 0x80; b[o++] = 0x01; b[o++] = 0x00; b[o++] = enc_attr;
+  if (use_aes) {
+    b[o++] = 0x80; b[o++] = 0x0e; b[o++] = 0x00; b[o++] = 0x80;
+  }
+  b[o++] = 0x80; b[o++] = 0x02; b[o++] = 0x00; b[o++] = 0x02;
+  b[o++] = 0x80; b[o++] = 0x03; b[o++] = 0x00; b[o++] = 0x01;
+  b[o++] = 0x80; b[o++] = 0x04;
+  util_write_be16(b + o, dh_attr); o += 2;
 
+  util_write_be16(b + t_len_m, (uint16_t)(o - t0));
   util_write_be16(b + prop_len_m, (uint16_t)(o - prop0));
   return o;
 }
@@ -1165,7 +1151,16 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   mbedtls_mpi P, G;
   mbedtls_mpi_init(&P);
   mbedtls_mpi_init(&G);
-  if (mbedtls_mpi_read_binary(&P, rfc3526_modp2048_p, sizeof(rfc3526_modp2048_p)) != 0 ||
+  const advanced_ike_ipsec_settings_t *ike_settings = tunnel_get_advanced_ike_ipsec_settings();
+  int selected_dh = ike_settings->ike_dh_group;
+  if (selected_dh == 0)
+    selected_dh = (ike_settings->ike_encryption == 1) ? 2 : 1;
+  const uint8_t *dh_prime = (selected_dh == 1) ? rfc2409_modp1024_p : rfc3526_modp2048_p;
+  size_t dh_prime_len = (selected_dh == 1) ? sizeof(rfc2409_modp1024_p) : sizeof(rfc3526_modp2048_p);
+  size_t dh_pubkey_bytes = (selected_dh == 1) ? IKE_DH_PUBKEY_BYTES_DH2 : IKE_DH_PUBKEY_BYTES_DH14;
+  tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG, "IKE Phase1 settings: encryption=%d dh_group=%d pubkey_bytes=%zu",
+                    ike_settings->ike_encryption, selected_dh, dh_pubkey_bytes);
+  if (mbedtls_mpi_read_binary(&P, dh_prime, dh_prime_len) != 0 ||
       mbedtls_mpi_lset(&G, 2) != 0 || mbedtls_dhm_set_group(&dhm, &P, &G) != 0) {
     tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: DH group setup failed");
     mbedtls_mpi_free(&P);
@@ -1176,8 +1171,8 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   mbedtls_mpi_free(&P);
   mbedtls_mpi_free(&G);
 
-  uint8_t pubkey[IKE_DH_PUBKEY_BYTES];
-  if (mbedtls_dhm_make_public(&dhm, (int)dhm.len, pubkey, sizeof(pubkey), mbedtls_ctr_drbg_random, &ctr) != 0) {
+  uint8_t pubkey[IKE_DH_PUBKEY_BYTES_DH14];
+  if (mbedtls_dhm_make_public(&dhm, (int)dhm.len, pubkey, dh_pubkey_bytes, mbedtls_ctr_drbg_random, &ctr) != 0) {
     tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: dhm_make_public failed");
     mbedtls_dhm_free(&dhm);
     goto fail_fd;
@@ -1388,10 +1383,10 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
 
   pkt[o++] = IKE_PT_NONCE;
   pkt[o++] = 0;
-  util_write_be16(pkt + o, (uint16_t)(4 + sizeof(pubkey)));
+  util_write_be16(pkt + o, (uint16_t)(4 + dh_pubkey_bytes));
   o += 2;
-  memcpy(pkt + o, pubkey, sizeof(pubkey));
-  o += sizeof(pubkey);
+  memcpy(pkt + o, pubkey, dh_pubkey_bytes);
+  o += dh_pubkey_bytes;
 
   pkt[o++] = IKE_PT_NAT_D;
   pkt[o++] = 0;
@@ -1449,7 +1444,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   }
   memcpy(ke_r_buf, am4.ke_r, am4.ke_r_len);
   ke_r_len = am4.ke_r_len;
-  if (normalize_dh_value(ke_r_buf, &ke_r_len, sizeof(ke_r_buf), IKE_DH_PUBKEY_BYTES) != 0) {
+  if (normalize_dh_value(ke_r_buf, &ke_r_len, sizeof(ke_r_buf), dh_pubkey_bytes) != 0) {
     tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE MM4: responder KE is not a valid MODP2048 value");
     goto fail_fd;
   }
@@ -1470,7 +1465,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     goto fail_fd;
   }
   mbedtls_dhm_free(&dhm);
-  if (normalize_dh_value(gxy, &gxy_len, sizeof(gxy), IKE_DH_PUBKEY_BYTES) != 0) {
+  if (normalize_dh_value(gxy, &gxy_len, sizeof(gxy), dh_pubkey_bytes) != 0) {
     tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: DH shared secret is not a valid MODP2048 value");
     goto fail_fd;
   }
