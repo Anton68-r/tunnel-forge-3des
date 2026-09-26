@@ -403,6 +403,128 @@ class CandidateApp {
   }
 }
 
+/// Advanced IKE/IPsec settings for a VPN profile.
+/// Auto values preserve the normal TunnelForge negotiation behavior.
+enum IkeEncryption {
+  auto('auto'),
+  aes128('aes128'),
+  threeDes('3des');
+  const IkeEncryption(this.jsonValue);
+  final String jsonValue;
+  static IkeEncryption fromJson(Object? raw) => switch (raw) {
+    'aes128' => IkeEncryption.aes128,
+    '3des' => IkeEncryption.threeDes,
+    _ => IkeEncryption.auto,
+  };
+}
+
+enum IkeHash {
+  auto('auto'),
+  sha1('sha1');
+  const IkeHash(this.jsonValue);
+  final String jsonValue;
+  static IkeHash fromJson(Object? raw) => raw == 'sha1' ? IkeHash.sha1 : IkeHash.auto;
+}
+
+enum IkeDhGroup {
+  auto('auto'),
+  dh2('dh2'),
+  dh14('dh14');
+  const IkeDhGroup(this.jsonValue);
+  final String jsonValue;
+  static IkeDhGroup fromJson(Object? raw) => switch (raw) {
+    'dh2' => IkeDhGroup.dh2,
+    'dh14' => IkeDhGroup.dh14,
+    _ => IkeDhGroup.auto,
+  };
+}
+
+enum IkeProposalOrder {
+  auto('auto'),
+  aesThen3Des('aesThen3des'),
+  threeDesThenAes('3desThenAes');
+  const IkeProposalOrder(this.jsonValue);
+  final String jsonValue;
+  static IkeProposalOrder fromJson(Object? raw) => switch (raw) {
+    'aesThen3des' => IkeProposalOrder.aesThen3Des,
+    '3desThenAes' => IkeProposalOrder.threeDesThenAes,
+    _ => IkeProposalOrder.auto,
+  };
+}
+
+enum IkePortMode {
+  auto('auto'),
+  port500('500'),
+  port4500('4500');
+  const IkePortMode(this.jsonValue);
+  final String jsonValue;
+  static IkePortMode fromJson(Object? raw) => switch (raw) {
+    '500' => IkePortMode.port500,
+    '4500' => IkePortMode.port4500,
+    _ => IkePortMode.auto,
+  };
+}
+
+enum NatTraversalMode {
+  auto('auto'),
+  disabled('disabled'),
+  enabled('enabled');
+  const NatTraversalMode(this.jsonValue);
+  final String jsonValue;
+  static NatTraversalMode fromJson(Object? raw) => switch (raw) {
+    'disabled' => NatTraversalMode.disabled,
+    'enabled' => NatTraversalMode.enabled,
+    _ => NatTraversalMode.auto,
+  };
+}
+
+class AdvancedIkeIpsecSettings {
+  const AdvancedIkeIpsecSettings({
+    this.ikeEncryption = IkeEncryption.auto,
+    this.ikeHash = IkeHash.auto,
+    this.ikeDhGroup = IkeDhGroup.auto,
+    this.ikeProposalOrder = IkeProposalOrder.auto,
+    this.ikePort = IkePortMode.auto,
+    this.natTraversal = NatTraversalMode.auto,
+    this.espEncryption = IkeEncryption.auto,
+    this.espHash = IkeHash.auto,
+  });
+
+  final IkeEncryption ikeEncryption;
+  final IkeHash ikeHash;
+  final IkeDhGroup ikeDhGroup;
+  final IkeProposalOrder ikeProposalOrder;
+  final IkePortMode ikePort;
+  final NatTraversalMode natTraversal;
+  final IkeEncryption espEncryption;
+  final IkeHash espHash;
+
+  Map<String, dynamic> toJson() => {
+    'ikeEncryption': ikeEncryption.jsonValue,
+    'ikeHash': ikeHash.jsonValue,
+    'ikeDhGroup': ikeDhGroup.jsonValue,
+    'ikeProposalOrder': ikeProposalOrder.jsonValue,
+    'ikePort': ikePort.jsonValue,
+    'natTraversal': natTraversal.jsonValue,
+    'espEncryption': espEncryption.jsonValue,
+    'espHash': espHash.jsonValue,
+  };
+
+  static AdvancedIkeIpsecSettings fromJson(Object? raw) {
+    if (raw is! Map) return const AdvancedIkeIpsecSettings();
+    return AdvancedIkeIpsecSettings(
+      ikeEncryption: IkeEncryption.fromJson(raw['ikeEncryption']),
+      ikeHash: IkeHash.fromJson(raw['ikeHash']),
+      ikeDhGroup: IkeDhGroup.fromJson(raw['ikeDhGroup']),
+      ikeProposalOrder: IkeProposalOrder.fromJson(raw['ikeProposalOrder']),
+      ikePort: IkePortMode.fromJson(raw['ikePort']),
+      natTraversal: NatTraversalMode.fromJson(raw['natTraversal']),
+      espEncryption: IkeEncryption.fromJson(raw['espEncryption']),
+      espHash: IkeHash.fromJson(raw['espHash']),
+    );
+  }
+}
+
 /// Saved VPN identity: public fields only; password and PSK live in [ProfileStore] secrets.
 class Profile {
   const Profile({
@@ -416,6 +538,7 @@ class Profile {
     this.dns2Host = '',
     this.dns2Protocol = DnsProtocol.dnsOverUdp,
     this.mtu = defaultVpnMtu,
+    this.advancedIkeIpsec = const AdvancedIkeIpsecSettings(),
   });
 
   /// TUN interface MTU (bytes). Shared default for new profiles and quick-connect.
@@ -436,6 +559,7 @@ class Profile {
 
   /// Android VpnService [Builder.setMtu]; clamped [minVpnMtu]–[maxVpnMtu].
   final int mtu;
+  final AdvancedIkeIpsecSettings advancedIkeIpsec;
 
   List<DnsServerConfig> get manualDnsServers => orderedDnsServers(
     dns1Host: dns1Host,
@@ -613,6 +737,7 @@ class Profile {
     'dns2Host': normalizeDnsServerForProtocol(dns2Host, dns2Protocol),
     'dns2Protocol': dns2Protocol.jsonValue,
     'mtu': mtu,
+    'advancedIkeIpsec': advancedIkeIpsec.toJson(),
   };
 
   static Profile? tryFromJson(Object? raw) {
@@ -641,6 +766,7 @@ class Profile {
     if (id.isEmpty || server.isEmpty) return null;
     int mtu = defaultVpnMtu;
     final mtuRaw = m['mtu'];
+    final advancedIkeIpsec = AdvancedIkeIpsecSettings.fromJson(m['advancedIkeIpsec']);
     final parsedDns1Protocol = DnsProtocol.fromJson(dns1Protocol);
     final parsedDns2Protocol = DnsProtocol.fromJson(dns2Protocol);
     if (mtuRaw is int) {
@@ -661,6 +787,7 @@ class Profile {
       dns2Host: normalizeDnsServerForProtocol(dns2Host, parsedDns2Protocol),
       dns2Protocol: parsedDns2Protocol,
       mtu: mtu,
+      advancedIkeIpsec: advancedIkeIpsec,
     );
   }
 }
