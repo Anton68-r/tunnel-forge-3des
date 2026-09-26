@@ -108,6 +108,21 @@ cleanup:
   return out;
 }
 
+static void native_set_advanced_ike_ipsec_settings(JNIEnv *env, jclass clazz, jintArray jsettings) {
+  (void)clazz;
+  if (jsettings == NULL || (*env)->GetArrayLength(env, jsettings) < 8) {
+    tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG,
+                      "nativeSetAdvancedIkeIpsecSettings: expected at least 8 integers");
+    return;
+  }
+  jint values[8];
+  (*env)->GetIntArrayRegion(env, jsettings, 0, 8, values);
+  int native_values[8];
+  for (int i = 0; i < 8; i++)
+    native_values[i] = (int)values[i];
+  tunnel_set_advanced_ike_ipsec_settings(native_values, 8u);
+}
+
 static void native_set_socket_protection_enabled(JNIEnv *env, jclass clazz, jboolean enabled) {
   (void)env;
   (void)clazz;
@@ -403,6 +418,7 @@ static int register_vpn_bridge(JNIEnv *env) {
        (void *)native_run_tunnel},
       {"nativeNegotiate", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I[I[I[I)I",
        (void *)native_negotiate},
+      {"nativeSetAdvancedIkeIpsecSettings", "([I)V", (void *)native_set_advanced_ike_ipsec_settings},
       {"nativeSetSocketProtectionEnabled", "(Z)V", (void *)native_set_socket_protection_enabled},
       {"nativeStartLoop", "(I)I", (void *)native_start_loop},
       {"nativeStartProxyLoop", "()I", (void *)native_start_proxy_loop},
