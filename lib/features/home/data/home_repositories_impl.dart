@@ -473,6 +473,7 @@ class TunnelRepositoryImpl implements TunnelRepository {
       dnsAutomatic: request.dnsAutomatic,
       dnsServers: request.dnsServers,
       mtu: request.mtu,
+      advancedIkeIpsec: request.advancedIkeIpsec,
       splitTunnelSettings: request.splitTunnelSettings,
       proxySettings: request.proxySettings,
     );
