@@ -222,6 +222,7 @@ class TunnelVpnService : VpnService() {
                                 inclusivePackages,
                                 exclusivePackages,
                                 proxyConfig,
+                                advancedIkeIpsec,
                             )
                         },
                         "tun-setup",
@@ -312,6 +313,7 @@ class TunnelVpnService : VpnService() {
         inclusivePackages: ArrayList<String>?,
         exclusivePackages: ArrayList<String>?,
         proxyConfig: ProxyRuntimeConfig,
+        advancedIkeIpsec: IntArray,
     ) {
         val currentSetupThread = Thread.currentThread()
         val nativeOwner = nativeOwner(attemptId)
