@@ -38,6 +38,7 @@ abstract final class VpnContract {
   static const String argDnsServerHost = 'host';
   static const String argDnsServerProtocol = 'protocol';
   static const String argMtu = 'mtu';
+  static const String argAdvancedIkeIpsec = 'advancedIkeIpsec';
   static const String argProfileName = 'profileName';
   static const String argConnectionMode = 'connectionMode';
   static const String argProxyHttpPort = 'proxyHttpPort';
