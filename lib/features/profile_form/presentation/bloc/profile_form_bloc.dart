@@ -141,6 +141,7 @@ class ProfileFormState extends Equatable {
     this.dns2 = '',
     this.dns2Protocol = DnsProtocol.dnsOverUdp,
     this.mtu = '${Profile.defaultVpnMtu}',
+    this.advancedIkeIpsec = const AdvancedIkeIpsecSettings(),
     this.messageId = 0,
     this.message,
     this.saved = false,
@@ -161,6 +162,7 @@ class ProfileFormState extends Equatable {
   final String dns2;
   final DnsProtocol dns2Protocol;
   final String mtu;
+  final AdvancedIkeIpsecSettings advancedIkeIpsec;
   final int messageId;
   final String? message;
   final bool saved;
@@ -188,6 +190,7 @@ class ProfileFormState extends Equatable {
     String? dns2,
     DnsProtocol? dns2Protocol,
     String? mtu,
+    AdvancedIkeIpsecSettings? advancedIkeIpsec,
     int? messageId,
     String? message,
     bool clearMessage = false,
@@ -209,6 +212,7 @@ class ProfileFormState extends Equatable {
       dns2: dns2 ?? this.dns2,
       dns2Protocol: dns2Protocol ?? this.dns2Protocol,
       mtu: mtu ?? this.mtu,
+      advancedIkeIpsec: advancedIkeIpsec ?? this.advancedIkeIpsec,
       messageId: messageId ?? this.messageId,
       message: clearMessage ? null : (message ?? this.message),
       saved: saved ?? this.saved,
@@ -232,6 +236,7 @@ class ProfileFormState extends Equatable {
     dns2,
     dns2Protocol,
     mtu,
+    advancedIkeIpsec,
     messageId,
     message,
     saved,
@@ -325,6 +330,7 @@ class ProfileFormBloc extends Bloc<ProfileFormEvent, ProfileFormState> {
           dns2: '',
           dns2Protocol: DnsProtocol.dnsOverUdp,
           mtu: '${Profile.defaultVpnMtu}',
+          advancedIkeIpsec: const AdvancedIkeIpsecSettings(),
           saved: false,
         ),
       );
@@ -361,6 +367,7 @@ class ProfileFormBloc extends Bloc<ProfileFormEvent, ProfileFormState> {
         dns2: profile.dns2Host,
         dns2Protocol: profile.dns2Protocol,
         mtu: '${profile.mtu}',
+        advancedIkeIpsec: profile.advancedIkeIpsec,
       ),
     );
   }
@@ -456,6 +463,7 @@ class ProfileFormBloc extends Bloc<ProfileFormEvent, ProfileFormState> {
         ),
         dns2Protocol: state.dns2Protocol,
         mtu: Profile.normalizeMtu(mtuParsed),
+        advancedIkeIpsec: state.advancedIkeIpsec,
       );
       await _profilesRepository.upsertProfile(
         profile,
