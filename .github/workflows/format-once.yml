@@ -1,0 +1,31 @@
+name: Format once
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: "!startsWith(github.event.head_commit.message, 'Apply Dart formatting')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.2"
+          channel: stable
+      - run: dart format lib test
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "No formatting changes."
+            exit 0
+          fi
+          git add lib test
+          git commit -m "Apply Dart formatting"
+          git push
