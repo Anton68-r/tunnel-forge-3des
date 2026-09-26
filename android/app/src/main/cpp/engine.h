@@ -52,6 +52,7 @@ typedef struct {
 } advanced_ike_ipsec_settings_t;
 
 void tunnel_set_advanced_ike_ipsec_settings(const int *values, size_t count);
+const advanced_ike_ipsec_settings_t *tunnel_get_advanced_ike_ipsec_settings(void);
 
 /** Phase 1: IKE + L2TP + PPP negotiation (no TUN fd needed). Call before VPN establish(). */
 int tunnel_negotiate(const char *server, const char *user, const char *password, const char *psk, int tun_mtu);
