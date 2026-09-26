@@ -249,6 +249,8 @@ static int ike_send_recv(int fd, const struct sockaddr *peer, socklen_t peer_len
       tunnel_engine_log(ANDROID_LOG_INFO, LOG_TAG, "ike_send_recv: canceled before send");
       return -1;
     }
+    tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG, "ike_send_recv: TX datagram %zu bytes nat_t=%d", sendlen, prefix4500);
+    ike_hex_dump("IKE TX", sendptr, sendlen, 2048);
     ssize_t ns = sendto(fd, sendptr, sendlen, 0, peer, peer_len);
     if (ns != (ssize_t)sendlen) {
       tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "ike_send_recv: sendto ret=%zd want=%zu errno=%d nat_t=%d", ns,
