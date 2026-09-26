@@ -34,6 +34,24 @@
 
 static atomic_int g_stop;
 
+static advanced_ike_ipsec_settings_t g_advanced_ike_ipsec = {0};
+
+void tunnel_set_advanced_ike_ipsec_settings(const int *values, size_t count) {
+  if (values == NULL || count < 8u)
+    return;
+  g_advanced_ike_ipsec.ike_encryption = values[0];
+  g_advanced_ike_ipsec.ike_hash = values[1];
+  g_advanced_ike_ipsec.ike_dh_group = values[2];
+  g_advanced_ike_ipsec.ike_proposal_order = values[3];
+  g_advanced_ike_ipsec.ike_port = values[4];
+  g_advanced_ike_ipsec.nat_traversal = values[5];
+  g_advanced_ike_ipsec.esp_encryption = values[6];
+  g_advanced_ike_ipsec.esp_hash = values[7];
+  tunnel_engine_log(ANDROID_LOG_DEBUG, "tunnel_engine",
+                    "Advanced IKE/IPsec settings received: enc=%d hash=%d dh=%d order=%d port=%d natt=%d esp=%d esphash=%d",
+                    values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
+}
+
 static struct {
   ike_session_t ike;
   esp_keys_t esp;
