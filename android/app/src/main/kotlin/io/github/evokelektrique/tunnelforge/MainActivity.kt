@@ -693,6 +693,21 @@ class MainActivity : FlutterActivity() {
         return if (candidate in 1..65535) candidate else fallback
     }
 
+    private fun parseAdvancedIkeIpsec(raw: Any?): IntArray {
+        val defaults = IntArray(8)
+        if (raw !is List<*>) return defaults
+        for (i in 0 until 8) {
+            val value = raw.getOrNull(i)
+            defaults[i] = when (value) {
+                is Int -> value
+                is Long -> value.toInt()
+                is Number -> value.toInt()
+                else -> 0
+            }.coerceAtLeast(0)
+        }
+        return defaults
+    }
+
     private fun parseDnsServers(raw: Any?): List<DnsServerConfig> {
         val out = mutableListOf<DnsServerConfig>()
         if (raw is List<*>) {
