@@ -84,6 +84,7 @@ class ProxyTunnelService : Service() {
                 val socksPort = sanitizePort(intent.getIntExtra(EXTRA_PROXY_SOCKS_PORT, DEFAULT_SOCKS_PORT), DEFAULT_SOCKS_PORT)
                 val allowLanConnections = intent.getBooleanExtra(EXTRA_PROXY_ALLOW_LAN, false)
                 val proxyMtu = sanitizeMtu(intent.getIntExtra(EXTRA_MTU, DEFAULT_LINK_MTU))
+                val advancedIkeIpsec = intent.getIntArrayExtra(EXTRA_ADVANCED_IKE_IPSEC) ?: IntArray(8)
                 VpnTunnelEvents.emitEngineLog(
                     Log.DEBUG,
                     TAG,
@@ -191,6 +192,7 @@ class ProxyTunnelService : Service() {
             val negotiatedClientIp = IntArray(4)
             val negotiatedPrimaryDns = IntArray(4)
             val negotiatedSecondaryDns = IntArray(4)
+            VpnBridge.nativeSetAdvancedIkeIpsecSettings(advancedIkeIpsec)
             val negResult =
                 VpnBridge.nativeNegotiate(
                     server,
@@ -848,6 +850,7 @@ class ProxyTunnelService : Service() {
         const val EXTRA_DNS_SERVER_2_HOST = TunnelVpnService.EXTRA_DNS_SERVER_2_HOST
         const val EXTRA_DNS_SERVER_2_PROTOCOL = TunnelVpnService.EXTRA_DNS_SERVER_2_PROTOCOL
         const val EXTRA_MTU = "mtu"
+        const val EXTRA_ADVANCED_IKE_IPSEC = "advancedIkeIpsec"
         const val EXTRA_PROFILE_NAME = "profileName"
         const val EXTRA_PROXY_HTTP_PORT = "proxyHttpPort"
         const val EXTRA_PROXY_SOCKS_PORT = "proxySocksPort"
