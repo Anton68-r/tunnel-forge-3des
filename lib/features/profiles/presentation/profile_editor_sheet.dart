@@ -220,16 +220,18 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
                   ),
                 )
                 .toList(growable: false),
-            onChanged: (v) => update(AdvancedIkeIpsecSettings(
-              ikeEncryption: v ?? a.ikeEncryption,
-              ikeHash: a.ikeHash,
-              ikeDhGroup: a.ikeDhGroup,
-              ikeProposalOrder: a.ikeProposalOrder,
-              ikePort: a.ikePort,
-              natTraversal: a.natTraversal,
-              espEncryption: a.espEncryption,
-              espHash: a.espHash,
-            )),
+            onChanged: (v) => update(
+              AdvancedIkeIpsecSettings(
+                ikeEncryption: v ?? a.ikeEncryption,
+                ikeHash: a.ikeHash,
+                ikeDhGroup: a.ikeDhGroup,
+                ikeProposalOrder: a.ikeProposalOrder,
+                ikePort: a.ikePort,
+                natTraversal: a.natTraversal,
+                espEncryption: a.espEncryption,
+                espHash: a.espHash,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           _advancedDropdown<IkeHash>(
@@ -238,18 +240,22 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             value: a.ikeHash,
             items: IkeHash.values
                 .map(
-                  (v) => DropdownMenuItem(
-                    value: v,
-                    child: Text(_ikeHashLabel(v)),
-                  ),
+                  (v) =>
+                      DropdownMenuItem(value: v, child: Text(_ikeHashLabel(v))),
                 )
                 .toList(growable: false),
-            onChanged: (v) => update(AdvancedIkeIpsecSettings(
-              ikeEncryption: a.ikeEncryption, ikeHash: v ?? a.ikeHash,
-              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
-              ikePort: a.ikePort, natTraversal: a.natTraversal,
-              espEncryption: a.espEncryption, espHash: a.espHash,
-            )),
+            onChanged: (v) => update(
+              AdvancedIkeIpsecSettings(
+                ikeEncryption: a.ikeEncryption,
+                ikeHash: v ?? a.ikeHash,
+                ikeDhGroup: a.ikeDhGroup,
+                ikeProposalOrder: a.ikeProposalOrder,
+                ikePort: a.ikePort,
+                natTraversal: a.natTraversal,
+                espEncryption: a.espEncryption,
+                espHash: a.espHash,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           _advancedDropdown<IkeDhGroup>(
@@ -258,18 +264,21 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             value: a.ikeDhGroup,
             items: IkeDhGroup.values
                 .map(
-                  (v) => DropdownMenuItem(
-                    value: v,
-                    child: Text(_dhLabel(v)),
-                  ),
+                  (v) => DropdownMenuItem(value: v, child: Text(_dhLabel(v))),
                 )
                 .toList(growable: false),
-            onChanged: (v) => update(AdvancedIkeIpsecSettings(
-              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
-              ikeDhGroup: v ?? a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
-              ikePort: a.ikePort, natTraversal: a.natTraversal,
-              espEncryption: a.espEncryption, espHash: a.espHash,
-            )),
+            onChanged: (v) => update(
+              AdvancedIkeIpsecSettings(
+                ikeEncryption: a.ikeEncryption,
+                ikeHash: a.ikeHash,
+                ikeDhGroup: v ?? a.ikeDhGroup,
+                ikeProposalOrder: a.ikeProposalOrder,
+                ikePort: a.ikePort,
+                natTraversal: a.natTraversal,
+                espEncryption: a.espEncryption,
+                espHash: a.espHash,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           _advancedDropdown<IkeProposalOrder>(
@@ -284,12 +293,18 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
                   ),
                 )
                 .toList(growable: false),
-            onChanged: (v) => update(AdvancedIkeIpsecSettings(
-              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
-              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: v ?? a.ikeProposalOrder,
-              ikePort: a.ikePort, natTraversal: a.natTraversal,
-              espEncryption: a.espEncryption, espHash: a.espHash,
-            )),
+            onChanged: (v) => update(
+              AdvancedIkeIpsecSettings(
+                ikeEncryption: a.ikeEncryption,
+                ikeHash: a.ikeHash,
+                ikeDhGroup: a.ikeDhGroup,
+                ikeProposalOrder: v ?? a.ikeProposalOrder,
+                ikePort: a.ikePort,
+                natTraversal: a.natTraversal,
+                espEncryption: a.espEncryption,
+                espHash: a.espHash,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           _advancedDropdown<IkePortMode>(
@@ -298,18 +313,21 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             value: a.ikePort,
             items: IkePortMode.values
                 .map(
-                  (v) => DropdownMenuItem(
-                    value: v,
-                    child: Text(_portLabel(v)),
-                  ),
+                  (v) => DropdownMenuItem(value: v, child: Text(_portLabel(v))),
                 )
                 .toList(growable: false),
-            onChanged: (v) => update(AdvancedIkeIpsecSettings(
-              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
-              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
-              ikePort: v ?? a.ikePort, natTraversal: a.natTraversal,
-              espEncryption: a.espEncryption, espHash: a.espHash,
-            )),
+            onChanged: (v) => update(
+              AdvancedIkeIpsecSettings(
+                ikeEncryption: a.ikeEncryption,
+                ikeHash: a.ikeHash,
+                ikeDhGroup: a.ikeDhGroup,
+                ikeProposalOrder: a.ikeProposalOrder,
+                ikePort: v ?? a.ikePort,
+                natTraversal: a.natTraversal,
+                espEncryption: a.espEncryption,
+                espHash: a.espHash,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           _advancedDropdown<NatTraversalMode>(
@@ -318,18 +336,21 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             value: a.natTraversal,
             items: NatTraversalMode.values
                 .map(
-                  (v) => DropdownMenuItem(
-                    value: v,
-                    child: Text(_natLabel(v)),
-                  ),
+                  (v) => DropdownMenuItem(value: v, child: Text(_natLabel(v))),
                 )
                 .toList(growable: false),
-            onChanged: (v) => update(AdvancedIkeIpsecSettings(
-              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
-              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
-              ikePort: a.ikePort, natTraversal: v ?? a.natTraversal,
-              espEncryption: a.espEncryption, espHash: a.espHash,
-            )),
+            onChanged: (v) => update(
+              AdvancedIkeIpsecSettings(
+                ikeEncryption: a.ikeEncryption,
+                ikeHash: a.ikeHash,
+                ikeDhGroup: a.ikeDhGroup,
+                ikeProposalOrder: a.ikeProposalOrder,
+                ikePort: a.ikePort,
+                natTraversal: v ?? a.natTraversal,
+                espEncryption: a.espEncryption,
+                espHash: a.espHash,
+              ),
+            ),
           ),
           const Divider(height: 28),
           Text(
@@ -341,13 +362,26 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             context: context,
             label: 'ESP encryption',
             value: a.espEncryption,
-            items: IkeEncryption.values.map((v) => DropdownMenuItem(value: v, child: Text(_ikeEncryptionLabel(v)))).toList(growable: false),
-            onChanged: (v) => update(AdvancedIkeIpsecSettings(
-              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
-              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
-              ikePort: a.ikePort, natTraversal: a.natTraversal,
-              espEncryption: v ?? a.espEncryption, espHash: a.espHash,
-            )),
+            items: IkeEncryption.values
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_ikeEncryptionLabel(v)),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (v) => update(
+              AdvancedIkeIpsecSettings(
+                ikeEncryption: a.ikeEncryption,
+                ikeHash: a.ikeHash,
+                ikeDhGroup: a.ikeDhGroup,
+                ikeProposalOrder: a.ikeProposalOrder,
+                ikePort: a.ikePort,
+                natTraversal: a.natTraversal,
+                espEncryption: v ?? a.espEncryption,
+                espHash: a.espHash,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           _advancedDropdown<IkeHash>(
@@ -356,24 +390,27 @@ class _ProfileEditorViewState extends State<ProfileEditorView> {
             value: a.espHash,
             items: IkeHash.values
                 .map(
-                  (v) => DropdownMenuItem(
-                    value: v,
-                    child: Text(_ikeHashLabel(v)),
-                  ),
+                  (v) =>
+                      DropdownMenuItem(value: v, child: Text(_ikeHashLabel(v))),
                 )
                 .toList(growable: false),
-            onChanged: (v) => update(AdvancedIkeIpsecSettings(
-              ikeEncryption: a.ikeEncryption, ikeHash: a.ikeHash,
-              ikeDhGroup: a.ikeDhGroup, ikeProposalOrder: a.ikeProposalOrder,
-              ikePort: a.ikePort, natTraversal: a.natTraversal,
-              espEncryption: a.espEncryption, espHash: v ?? a.espHash,
-            )),
+            onChanged: (v) => update(
+              AdvancedIkeIpsecSettings(
+                ikeEncryption: a.ikeEncryption,
+                ikeHash: a.ikeHash,
+                ikeDhGroup: a.ikeDhGroup,
+                ikeProposalOrder: a.ikeProposalOrder,
+                ikePort: a.ikePort,
+                natTraversal: a.natTraversal,
+                espEncryption: a.espEncryption,
+                espHash: v ?? a.espHash,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
-
 
   Widget _secretField({
     required BuildContext context,

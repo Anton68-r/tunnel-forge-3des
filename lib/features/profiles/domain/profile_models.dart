@@ -409,6 +409,7 @@ enum IkeEncryption {
   auto('auto'),
   aes128('aes128'),
   threeDes('3des');
+
   const IkeEncryption(this.jsonValue);
   final String jsonValue;
   static IkeEncryption fromJson(Object? raw) => switch (raw) {
@@ -421,15 +422,18 @@ enum IkeEncryption {
 enum IkeHash {
   auto('auto'),
   sha1('sha1');
+
   const IkeHash(this.jsonValue);
   final String jsonValue;
-  static IkeHash fromJson(Object? raw) => raw == 'sha1' ? IkeHash.sha1 : IkeHash.auto;
+  static IkeHash fromJson(Object? raw) =>
+      raw == 'sha1' ? IkeHash.sha1 : IkeHash.auto;
 }
 
 enum IkeDhGroup {
   auto('auto'),
   dh2('dh2'),
   dh14('dh14');
+
   const IkeDhGroup(this.jsonValue);
   final String jsonValue;
   static IkeDhGroup fromJson(Object? raw) => switch (raw) {
@@ -443,6 +447,7 @@ enum IkeProposalOrder {
   auto('auto'),
   aesThen3Des('aesThen3des'),
   threeDesThenAes('3desThenAes');
+
   const IkeProposalOrder(this.jsonValue);
   final String jsonValue;
   static IkeProposalOrder fromJson(Object? raw) => switch (raw) {
@@ -456,6 +461,7 @@ enum IkePortMode {
   auto('auto'),
   port500('500'),
   port4500('4500');
+
   const IkePortMode(this.jsonValue);
   final String jsonValue;
   static IkePortMode fromJson(Object? raw) => switch (raw) {
@@ -469,6 +475,7 @@ enum NatTraversalMode {
   auto('auto'),
   disabled('disabled'),
   enabled('enabled');
+
   const NatTraversalMode(this.jsonValue);
   final String jsonValue;
   static NatTraversalMode fromJson(Object? raw) => switch (raw) {

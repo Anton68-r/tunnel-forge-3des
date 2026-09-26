@@ -311,9 +311,8 @@ class ProfileFormBloc extends Bloc<ProfileFormEvent, ProfileFormState> {
           emit(state.copyWith(mtu: event.value.trim(), saved: false)),
     );
     on<ProfileFormAdvancedIkeIpsecChanged>(
-      (event, emit) => emit(
-        state.copyWith(advancedIkeIpsec: event.value, saved: false),
-      ),
+      (event, emit) =>
+          emit(state.copyWith(advancedIkeIpsec: event.value, saved: false)),
     );
     on<ProfileFormSaveRequested>(_onSaveRequested);
   }

@@ -207,7 +207,8 @@ class VpnClient {
     bool dnsAutomatic = true,
     List<DnsServerConfig> dnsServers = const [],
     int mtu = Profile.defaultVpnMtu,
-    AdvancedIkeIpsecSettings advancedIkeIpsec = const AdvancedIkeIpsecSettings(),
+    AdvancedIkeIpsecSettings advancedIkeIpsec =
+        const AdvancedIkeIpsecSettings(),
     SplitTunnelSettings splitTunnelSettings = const SplitTunnelSettings(),
     ProxySettings proxySettings = const ProxySettings(),
   }) {
