@@ -1184,7 +1184,6 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   mbedtls_mpi P, G;
   mbedtls_mpi_init(&P);
   mbedtls_mpi_init(&G);
-  const advanced_ike_ipsec_settings_t *ike_settings = tunnel_get_advanced_ike_ipsec_settings();
   int selected_dh = ike_settings->ike_dh_group;
   if (selected_dh == 0)
     selected_dh = (ike_settings->ike_encryption == 1) ? 2 : 1;
