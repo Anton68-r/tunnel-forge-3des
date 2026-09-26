@@ -207,6 +207,7 @@ class VpnClient {
     bool dnsAutomatic = true,
     List<DnsServerConfig> dnsServers = const [],
     int mtu = Profile.defaultVpnMtu,
+    AdvancedIkeIpsecSettings advancedIkeIpsec = const AdvancedIkeIpsecSettings(),
     SplitTunnelSettings splitTunnelSettings = const SplitTunnelSettings(),
     ProxySettings proxySettings = const ProxySettings(),
   }) {
@@ -234,6 +235,7 @@ class VpnClient {
       VpnContract.argDnsAutomatic: dnsAutomatic,
       VpnContract.argDnsServers: normalizedDnsServers,
       VpnContract.argMtu: mtuClamped,
+      VpnContract.argAdvancedIkeIpsec: advancedIkeIpsec.toNativeValues(),
       VpnContract.argConnectionMode: connectionMode.jsonValue,
       VpnContract.argSplitTunnelEnabled: splitTunnelSettings.enabled,
       VpnContract.argSplitTunnelMode: splitTunnelSettings.mode.jsonValue,
