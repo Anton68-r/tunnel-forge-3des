@@ -251,8 +251,20 @@ static int ike_send_recv(int fd, const struct sockaddr *peer, socklen_t peer_len
     sendlen = out_len + 4;
   }
 
-  static const int retry_ms[] = {2000, 4000, 5000, 5000};
-  int attempts = (timeout_ms >= 16000) ? 4 : (timeout_ms >= 10000) ? 3 : (timeout_ms >= 4000) ? 2 : 1;
+  /*
+   * Retransmission schedule modeled on strongSwan's default IKE behavior:
+   * 4, 7, 13, 23, 42, 76 seconds.
+   *
+   * The first five waits are followed by retransmissions; the final 76 s
+   * wait is the grace period before giving up. This gives 5 retransmits
+   * and 165 s total elapsed time (4+7+13+23+42+76).
+   *
+   * timeout_ms remains a total budget so the caller can use a shorter
+   * diagnostic timeout if desired.
+   */
+  static const int retry_ms[] = {4000, 7000, 13000, 23000, 42000, 76000};
+  const int retry_count = (int)(sizeof(retry_ms) / sizeof(retry_ms[0]));
+  int attempts = timeout_ms >= 165000 ? retry_count : 1;
   int remaining = timeout_ms;
 
   /* Retry loop: re-send request each attempt until reply or timeout budget is exhausted. */
@@ -269,7 +281,7 @@ static int ike_send_recv(int fd, const struct sockaddr *peer, socklen_t peer_len
                         sendlen, errno, prefix4500);
       return -1;
     }
-    int wait = (attempt < 4) ? retry_ms[attempt] : 5000;
+    int wait = retry_ms[attempt];
     if (wait > remaining)
       wait = remaining;
     tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG, "ike_send_recv: attempt %d/%d wait=%d ms remaining=%d ms",
@@ -323,8 +335,8 @@ static int ike_send_recv(int fd, const struct sockaddr *peer, socklen_t peer_len
     }
     return (int)n;
   }
-  tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "ike_send_recv: all %d attempts failed (total timeout %d ms)", attempts,
-                    timeout_ms);
+  tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG,
+                    "ike_send_recv: all %d attempts failed (total timeout budget %d ms)", attempts, timeout_ms);
   return -1;
 }
 
@@ -1275,7 +1287,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   util_write_be32(pkt + len_m1, (uint32_t)o);
 
   tunnel_log("IKE Main Mode msg1 -> %zu bytes (transport=%s)", o, p1_prefix ? "UDP4500+marker" : "UDP500");
-  inlen = ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 8000, p1_prefix);
+  inlen = ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 165000, p1_prefix);
   if (inlen < 28 && !forced_4500) {
     /* Auto / forced UDP500: if MM2 is silent, retry full MM1 over UDP/4500 + non-ESP marker. */
     tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG,
@@ -1321,7 +1333,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     esp->udp_encap = 1;
     tunnel_log("IKE Main Mode msg1 retry -> %zu bytes (transport=UDP4500+marker)", o);
     inlen =
-        ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 8000, p1_prefix);
+        ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 165000, p1_prefix);
   }
   if (inlen < 28) {
     tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE MM msg2: no valid reply");
@@ -1447,7 +1459,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   util_write_be32(pkt + len_m3, (uint32_t)o);
 
   tunnel_log("IKE Main Mode msg3 -> %zu bytes (nat_t_prefix=%d)", o, p1_prefix);
-  inlen = ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 8000, p1_prefix);
+  inlen = ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 165000, p1_prefix);
   if (inlen < 28) {
     tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE MM msg4: no valid reply");
     mbedtls_dhm_free(&dhm);
@@ -1739,7 +1751,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     tunnel_log("IKE Main Mode msg5 (encrypted) try=%d/%d hash_sa=%s len=%zu -> %zu bytes (nat_t_prefix=%d)",
                mm5_try + 1, mm5_attempts, sa_hash_tag, sa_hash_len, o, p1_prefix);
     inlen =
-        ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 8000, p1_prefix);
+        ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 165000, p1_prefix);
     if (inlen >= 28 && in[18] == IKE_EXCH_MAIN) {
       sa_hash_used = sa_hash;
       sa_hash_used_len = sa_hash_len;
@@ -2019,7 +2031,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   util_write_be32(pkt + len_mark, (uint32_t)o);
 
   tunnel_log("IKE Quick Mode msg1 -> %zu bytes (nat_t=%d)", o, prefix);
-  inlen = ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 10000, prefix);
+  inlen = ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 165000, prefix);
   if (inlen < 28) {
     tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "Quick Mode: no reply (timeout or send error; see ike_send_recv)");
     goto fail_fd;
