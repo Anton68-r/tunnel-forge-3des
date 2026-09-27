@@ -242,7 +242,7 @@ class MainActivity : FlutterActivity() {
                                 putExtra(TunnelVpnService.EXTRA_MTU, mtu)
                                 putExtra(
                                     TunnelVpnService.EXTRA_ADVANCED_IKE_IPSEC,
-                                    parseAdvancedIkeIpsec(advancedIkeIpsec),
+                                    advancedIkeIpsec,
                                 )
                                 putExtra(TunnelVpnService.EXTRA_PROFILE_NAME, profileName)
                                 putExtra(TunnelVpnService.EXTRA_SPLIT_TUNNEL_ENABLED, splitTunnelEnabled)
