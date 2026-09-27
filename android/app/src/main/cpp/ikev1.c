@@ -830,42 +830,60 @@ static size_t build_p1_sa(uint8_t *b, size_t cap) {
   const advanced_ike_ipsec_settings_t *s = tunnel_get_advanced_ike_ipsec_settings();
   int enc = s->ike_encryption;
   int dh = s->ike_dh_group;
+  int order = s->ike_proposal_order;
   if (enc == 0) enc = 2; /* Auto: legacy 3DES profile for this diagnostic client. */
   if (dh == 0) dh = (enc == 2) ? 1 : 2;
 
-  const int use_aes = (enc == 1);
   const uint16_t dh_attr = (dh == 1) ? 0x0002 : 0x000e;
-  const uint8_t enc_attr = use_aes ? 0x07 : 0x05;
+  const int offer_both = (enc == 2 && order == 2);
 
   size_t o = 0;
   if (o + 8 + 80 > cap)
     return 0;
-  util_write_be32(b + o, 1); o += 4;
-  util_write_be32(b + o, 1); o += 4;
+  util_write_be32(b + o, 1); o += 4; /* DOI = IPSEC */
+  util_write_be32(b + o, 1); o += 4; /* situation = identity-only */
 
   size_t prop0 = o;
   b[o++] = IKE_PT_NONE; b[o++] = 0;
   size_t prop_len_m = o; o += 2;
-  b[o++] = 1; b[o++] = 1; b[o++] = 0; b[o++] = 1;
+  b[o++] = 1; /* proposal number */
+  b[o++] = 1; /* protocol = ISAKMP */
+  b[o++] = 0; /* SPI size */
+  b[o++] = (uint8_t)(offer_both ? 2 : 1); /* transform count */
 
-  size_t t0 = o;
-  b[o++] = IKE_PT_NONE; b[o++] = 0;
-  size_t t_len_m = o; o += 2;
-  b[o++] = 1;
-  b[o++] = use_aes ? 1 : 3;
-  b[o++] = 0; b[o++] = 0;
+  const int first_aes = (enc == 1) || (offer_both && order == 1);
+  const int second_aes = offer_both && !first_aes;
 
-  b[o++] = 0x80; b[o++] = 0x01; b[o++] = 0x00; b[o++] = enc_attr;
-  if (use_aes) {
-    b[o++] = 0x80; b[o++] = 0x0e; b[o++] = 0x00; b[o++] = 0x80;
+  for (int i = 0; i < (offer_both ? 2 : 1); ++i) {
+    const int use_aes = (i == 0) ? first_aes : second_aes;
+    size_t t0 = o;
+
+    b[o++] = (i + 1 < (offer_both ? 2 : 1)) ? IKE_PT_T : IKE_PT_NONE;
+    b[o++] = 0;
+    size_t t_len_m = o; o += 2;
+    b[o++] = 1; /* transform number */
+    b[o++] = use_aes ? 1 : 3; /* encryption transform: AES-CBC or 3DES-CBC */
+    b[o++] = 0; b[o++] = 0;
+
+    b[o++] = 0x80; b[o++] = 0x01; b[o++] = 0x00; b[o++] = use_aes ? 0x07 : 0x05;
+    if (use_aes) {
+      b[o++] = 0x80; b[o++] = 0x0e; b[o++] = 0x00; b[o++] = 0x80; /* key length = 128 */
+    }
+    b[o++] = 0x80; b[o++] = 0x02; b[o++] = 0x00; b[o++] = 0x02; /* SHA1 */
+    b[o++] = 0x80; b[o++] = 0x03; b[o++] = 0x00; b[o++] = 0x01; /* PSK */
+    b[o++] = 0x80; b[o++] = 0x04;
+    util_write_be16(b + o, dh_attr); o += 2;
+
+    util_write_be16(b + t_len_m, (uint16_t)(o - t0));
   }
-  b[o++] = 0x80; b[o++] = 0x02; b[o++] = 0x00; b[o++] = 0x02;
-  b[o++] = 0x80; b[o++] = 0x03; b[o++] = 0x00; b[o++] = 0x01;
-  b[o++] = 0x80; b[o++] = 0x04;
-  util_write_be16(b + o, dh_attr); o += 2;
 
-  util_write_be16(b + t_len_m, (uint16_t)(o - t0));
   util_write_be16(b + prop_len_m, (uint16_t)(o - prop0));
+  tunnel_engine_log(
+      ANDROID_LOG_DEBUG, LOG_TAG,
+      "IKE Phase1 proposal: transforms=%u order=%s dh=%d",
+      offer_both ? 2u : 1u,
+      offer_both ? (first_aes ? "AES->3DES" : "3DES->AES") : (first_aes ? "AES" : "3DES"),
+      dh);
   return o;
 }
 
