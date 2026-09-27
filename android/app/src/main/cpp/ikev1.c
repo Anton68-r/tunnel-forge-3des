@@ -1163,19 +1163,6 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   }
   if (util_protect_fd(fd) != 0)
     goto fail_fd;
-  if (forced_port != 0) {
-    struct sockaddr_storage local_bind;
-    memset(&local_bind, 0, sizeof(local_bind));
-    struct sockaddr_in *lb = (struct sockaddr_in *)&local_bind;
-    lb->sin_family = AF_INET;
-    lb->sin_addr.s_addr = htonl(INADDR_ANY);
-    lb->sin_port = htons(initial_peer_port);
-    if (bind(fd, (struct sockaddr *)lb, sizeof(*lb)) != 0) {
-      tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: bind(local UDP %u) errno=%d", (unsigned)initial_peer_port, errno);
-      goto fail_fd;
-    }
-    tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG, "IKE: forced local UDP port=%u", (unsigned)initial_peer_port);
-  }
   if (connect(fd, (struct sockaddr *)&peer500, l500) != 0) {
     tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: connect(initial port=%u) errno=%d", (unsigned)initial_peer_port, errno);
     goto fail_fd;
@@ -1316,20 +1303,6 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     if (util_protect_fd(fd) != 0) {
       mbedtls_dhm_free(&dhm);
       goto fail_fd;
-    }
-    if (forced_port == 1) {
-      struct sockaddr_storage local_bind;
-      memset(&local_bind, 0, sizeof(local_bind));
-      struct sockaddr_in *lb = (struct sockaddr_in *)&local_bind;
-      lb->sin_family = AF_INET;
-      lb->sin_addr.s_addr = htonl(INADDR_ANY);
-      lb->sin_port = htons(IKE_PORT);
-      if (bind(fd, (struct sockaddr *)lb, sizeof(*lb)) != 0) {
-        tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: bind(local UDP 500) on fallback errno=%d", errno);
-        mbedtls_dhm_free(&dhm);
-        goto fail_fd;
-      }
-      tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG, "IKE: forced local UDP port=500 retained on NAT-T fallback");
     }
     if (connect(fd, (struct sockaddr *)&peer_active, peer_active_len) != 0) {
       tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: connect(4500 MM1 fallback) errno=%d", errno);
