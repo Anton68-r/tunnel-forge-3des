@@ -215,7 +215,8 @@ class VpnClient {
     final mtuClamped = Profile.normalizeMtu(mtu);
     // Temporary diagnostic: verify Advanced IKE/IPsec values before crossing MethodChannel.
     print(
-      'vpn_client Advanced IKE/IPsec: \${advancedIkeIpsec.toNativeValues()}',
+      'vpn_client Advanced IKE/IPsec: ' +
+          advancedIkeIpsec.toNativeValues().toString(),
     );
     // Flutter keeps DNS slot ordering explicit so Android can preserve DNS 1
     // as primary and DNS 2 as fallback without reparsing free-form text.
