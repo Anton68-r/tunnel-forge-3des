@@ -1264,20 +1264,14 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   o += 4;
   size_t len_m1 = o;
   o += 4;
-  // SA payload; next payload is VID so Pluto enables NAT-T before MM3.
-  pkt[o++] = IKE_PT_VID;
+  // Diagnostic MM1: send SA only, without RFC 3947 Vendor ID.
+  // This isolates whether the peer rejects the NAT-T Vendor ID itself.
+  pkt[o++] = IKE_PT_NONE;
   pkt[o++] = 0;
   util_write_be16(pkt + o, (uint16_t)(4 + sa_len));
   o += 2;
   memcpy(pkt + o, sa_inner, sa_len);
   o += sa_len;
-  /* VID payload (RFC 3947 NAT-T) */
-  pkt[o++] = IKE_PT_NONE;
-  pkt[o++] = 0;
-  util_write_be16(pkt + o, (uint16_t)(4 + IKE_VID_RFC3947_LEN));
-  o += 2;
-  memcpy(pkt + o, k_vid_rfc3947, IKE_VID_RFC3947_LEN);
-  o += IKE_VID_RFC3947_LEN;
   util_write_be32(pkt + len_m1, (uint32_t)o);
 
   tunnel_log("IKE Main Mode msg1 -> %zu bytes (transport=%s)", o, p1_prefix ? "UDP4500+marker" : "UDP500");
