@@ -130,7 +130,7 @@ class MainActivity : FlutterActivity() {
                     val dnsAutomatic = args[VpnContract.ARG_DNS_AUTOMATIC] as? Boolean ?: true
                     val dnsServers = parseDnsServers(args[VpnContract.ARG_DNS_SERVERS])
                     val advancedIkeIpsec = parseAdvancedIkeIpsec(args[VpnContract.ARG_ADVANCED_IKE_IPSEC])
-                    AppLog.d(TAG, "Advanced IKE/IPsec from MethodChannel: \${advancedIkeIpsec.joinToString(",")}")
+                    AppLog.d(TAG, "Advanced IKE/IPsec from MethodChannel: " + advancedIkeIpsec.joinToString(","))
                     val mtuRaw = args[VpnContract.ARG_MTU]
                     val mtu = TunnelVpnService.sanitizeMtu(
                         when (mtuRaw) {
