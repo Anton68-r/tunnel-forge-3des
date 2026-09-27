@@ -861,7 +861,7 @@ static size_t build_p1_sa(uint8_t *b, size_t cap) {
     b[o++] = (i + 1 < (offer_both ? 2 : 1)) ? IKE_PT_T : IKE_PT_NONE;
     b[o++] = 0;
     size_t t_len_m = o; o += 2;
-    b[o++] = 1; /* transform number */
+    b[o++] = (uint8_t)(i + 1); /* unique transform number: 1, 2 */
     b[o++] = use_aes ? 1 : 3; /* encryption transform: AES-CBC or 3DES-CBC */
     b[o++] = 0; b[o++] = 0;
 
