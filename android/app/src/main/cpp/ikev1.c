@@ -1406,6 +1406,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   // IKEv1 Main Mode message 3: KE, Ni, optionally NAT-D payloads.
   // Only include NAT-D when the responder advertised NAT-T in MM2.
   int mm2_has_natd = 0;
+  uint8_t h_us[20], h_peer[20];
   {
     const uint8_t *mp = in + 28;
     int mleft = inlen - 28;
@@ -1461,7 +1462,6 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   o += sizeof(ni);
 
   if (mm2_has_natd) {
-    uint8_t h_us[20], h_peer[20];
     uint8_t fake_ip[4] = {0, 0, 0, 0};
     uint16_t fake_port = 0;
     natd_hash(ike->icookie, ike->rcookie, fake_ip, fake_port, h_us);
