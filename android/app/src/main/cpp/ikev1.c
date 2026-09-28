@@ -1651,14 +1651,14 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
       tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE MM: derive_aes128_key failed");
       goto fail_fd;
     }
-    phase1_iv_aes128(pubkey, sizeof(pubkey), ke_r_buf, ke_r_len, p1_iv);
+    phase1_iv_aes128(pubkey, dh_pubkey_bytes, ke_r_buf, ke_r_len, p1_iv);
   } else {
     if (derive_3des_key(skeyid_e, deskey) != 0) {
       tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE MM: derive_3des_key failed");
       goto fail_fd;
     }
     uint8_t iv8[8];
-    phase1_iv_sha1(pubkey, sizeof(pubkey), ke_r_buf, ke_r_len, iv8);
+    phase1_iv_sha1(pubkey, dh_pubkey_bytes, ke_r_buf, ke_r_len, iv8);
     memcpy(p1_iv, iv8, 8);
     memset(p1_iv + 8, 0, 8);
   }
@@ -1691,15 +1691,15 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     // HASH_I = prf(SKEYID, g^xi | g^xr | CKY-I | CKY-R | SAi_b | IDii_b).
     uint8_t hash_i[20];
     {
-      size_t hl = sizeof(pubkey) + ke_r_len + 8 + 8 + sa_hash_len + sizeof(id_body);
+      size_t hl = dh_pubkey_bytes + ke_r_len + 8 + 8 + sa_hash_len + sizeof(id_body);
       uint8_t *hb = malloc(hl ? hl : 1);
       if (!hb) {
         tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: malloc HASH_I material failed");
         goto fail_fd;
       }
       size_t q = 0;
-      memcpy(hb + q, pubkey, sizeof(pubkey));
-      q += sizeof(pubkey);
+      memcpy(hb + q, pubkey, dh_pubkey_bytes);
+      q += dh_pubkey_bytes;
       memcpy(hb + q, ke_r_buf, ke_r_len);
       q += ke_r_len;
       memcpy(hb + q, ike->icookie, 8);
@@ -1712,7 +1712,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
       q += sizeof(id_body);
       tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG,
                         "HASH_I material [%s]: pubkey_len=%zu ke_r_len=%zu sa_len=%zu id_body_len=%zu total=%zu",
-                        sa_hash_tag, sizeof(pubkey), ke_r_len, sa_hash_len, sizeof(id_body), q);
+                        sa_hash_tag, dh_pubkey_bytes, ke_r_len, sa_hash_len, sizeof(id_body), q);
       ike_hex_dump("HASH_I sa", sa_hash, sa_hash_len, sa_hash_len);
       ike_hex_dump("HASH_I id_body", id_body, sizeof(id_body), sizeof(id_body));
       if (prf_hmac_sha1(skeyid, sizeof(skeyid), hb, q, hash_i) != 0) {
@@ -1878,7 +1878,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     {
       // HASH_R = prf(SKEYID, g^xr | g^xi | CKY-R | CKY-I | SAi_b | IDir_b) (RFC 2409 sec 5.1).
       // ke_r_buf is the owned copy of g^xr; am4.ke_r would be stale (points into in[] overwritten by MM6).
-      size_t hl = ke_r_len + sizeof(pubkey) + 8 + 8 + sa_hash_used_len + id_r_len;
+      size_t hl = ke_r_len + dh_pubkey_bytes + 8 + 8 + sa_hash_used_len + id_r_len;
       uint8_t *hb = malloc(hl ? hl : 1);
       if (!hb) {
         tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE: malloc HASH_R material failed");
@@ -1887,8 +1887,8 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
       size_t q = 0;
       memcpy(hb + q, ke_r_buf, ke_r_len);
       q += ke_r_len;
-      memcpy(hb + q, pubkey, sizeof(pubkey));
-      q += sizeof(pubkey);
+      memcpy(hb + q, pubkey, dh_pubkey_bytes);
+      q += dh_pubkey_bytes;
       memcpy(hb + q, ike->rcookie, 8);
       q += 8;
       memcpy(hb + q, ike->icookie, 8);
@@ -1899,7 +1899,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
       q += id_r_len;
       tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG,
                         "HASH_R material [%s]: ke_r_len=%zu pubkey_len=%zu sa_len=%zu id_r_len=%zu total=%zu",
-                        sa_hash_used_tag, ke_r_len, sizeof(pubkey), sa_hash_used_len, id_r_len, q);
+                        sa_hash_used_tag, ke_r_len, dh_pubkey_bytes, sa_hash_used_len, id_r_len, q);
       ike_hex_dump("HASH_R sa", sa_hash_used, sa_hash_used_len, sa_hash_used_len);
       ike_hex_dump("HASH_R id_r", id_r, id_r_len, id_r_len);
       if (prf_hmac_sha1(skeyid, sizeof(skeyid), hb, q, hash_r_calc) != 0) {
