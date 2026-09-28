@@ -1428,35 +1428,40 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   size_t len_m3 = o;
   o += 4;
 
+  // IKEv1 Main Mode message 3: KE, Ni, optionally NAT-D payloads.
+  // Only include NAT-D when the responder advertised NAT-T in MM2.
+  int mm2_has_natd = 0;
+  {
+    const uint8_t *mp = in + 28;
+    int mleft = inlen - 28;
+    uint8_t mnp = in[16];
+    while (mleft >= 4 && mnp != IKE_PT_NONE) {
+      uint16_t mpl = util_read_be16(mp + 2);
+      if (mpl < 4 || mpl > (size_t)mleft)
+        break;
+      if (mnp == IKE_PT_NAT_D) {
+        mm2_has_natd = 1;
+        break;
+      }
+      mnp = mp[0];
+      mp += mpl;
+      mleft -= (int)mpl;
+    }
+  }
+  uint8_t h_us[20], h_peer[20];
+  if (mm2_has_natd) {
+    uint8_t fake_ip[4] = {0, 0, 0, 0};
+    uint16_t fake_port = 0;
+    natd_hash(ike->icookie, ike->rcookie, fake_ip, fake_port, h_us);
+    natd_hash(ike->icookie, ike->rcookie, ip_peer, port_peer_be, h_peer);
+  }
+
   pkt[o++] = IKE_PT_NONCE;
   pkt[o++] = 0;
   util_write_be16(pkt + o, (uint16_t)(4 + dh_pubkey_bytes));
   o += 2;
   memcpy(pkt + o, pubkey, dh_pubkey_bytes);
-  o += dh_pubkey_bytes;
-
-  pkt[o++] = IKE_PT_NAT_D;
-  pkt[o++] = 0;
-  util_write_be16(pkt + o, (uint16_t)(4 + sizeof(ni)));
-  o += 2;
-  memcpy(pkt + o, ni, sizeof(ni));
-  o += sizeof(ni);
-
-  pkt[o++] = IKE_PT_NAT_D;
-  pkt[o++] = 0;
-  util_write_be16(pkt + o, (uint16_t)(4 + 20));
-  o += 2;
-  memcpy(pkt + o, h_us, 20);
-  o += 20;
-
-  pkt[o++] = IKE_PT_NONE;
-  pkt[o++] = 0;
-  util_write_be16(pkt + o, (uint16_t)(4 + 20));
-  o += 2;
-  memcpy(pkt + o, h_peer, 20);
-  o += 20;
-
-  util_write_be32(pkt + len_m3, (uint32_t)o);
+  o += dh_pubkey_bytes;  util_write_be32(pkt + len_m3, (uint32_t)o);
 
   tunnel_log("IKE Main Mode msg3 -> %zu bytes (nat_t_prefix=%d)", o, p1_prefix);
   inlen = ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 165000, p1_prefix);
