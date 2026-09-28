@@ -1428,14 +1428,14 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   size_t len_m3 = o;
   o += 4;
 
-  pkt[o++] = IKE_PT_KE;
+  pkt[o++] = IKE_PT_NONCE;
   pkt[o++] = 0;
   util_write_be16(pkt + o, (uint16_t)(4 + dh_pubkey_bytes));
   o += 2;
   memcpy(pkt + o, pubkey, dh_pubkey_bytes);
   o += dh_pubkey_bytes;
 
-  pkt[o++] = IKE_PT_NONCE;
+  pkt[o++] = IKE_PT_NAT_D;
   pkt[o++] = 0;
   util_write_be16(pkt + o, (uint16_t)(4 + sizeof(ni)));
   o += 2;
@@ -1449,7 +1449,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   memcpy(pkt + o, h_us, 20);
   o += 20;
 
-  pkt[o++] = IKE_PT_NAT_D;
+  pkt[o++] = IKE_PT_NONE;
   pkt[o++] = 0;
   util_write_be16(pkt + o, (uint16_t)(4 + 20));
   o += 2;
