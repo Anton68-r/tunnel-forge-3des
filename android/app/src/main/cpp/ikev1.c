@@ -1745,7 +1745,8 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
         tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE MM msg5: AES encrypt failed");
         goto fail_fd;
       }
-      memcpy(msg5_iv_out, iv5, 16);
+      /* MM6 uses the last ciphertext block of MM5 as its CBC IV (RFC 2409). */
+      memcpy(msg5_iv_out, ct5 + ct5l - 16, 16);
     } else {
       uint8_t iv5[8];
       memcpy(iv5, p1_iv, 8);
@@ -1753,7 +1754,8 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
         tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE MM msg5: 3DES encrypt failed");
         goto fail_fd;
       }
-      memcpy(msg5_iv_out, iv5, 8);
+      /* MM6 uses the last ciphertext block of MM5 as its CBC IV (RFC 2409). */
+      memcpy(msg5_iv_out, ct5 + ct5l - 8, 8);
       memset(msg5_iv_out + 8, 0, 8);
     }
 
