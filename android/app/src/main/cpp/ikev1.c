@@ -1438,14 +1438,22 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   size_t len_m3 = o;
   o += 4;
 
-  pkt[o++] = IKE_PT_NONCE;
+  /*
+   * Build the MM3 payload chain explicitly:
+   *   KE -> Nonce
+   * or
+   *   KE -> Nonce -> NAT-D -> NAT-D
+   *
+   * Set each Next Payload field while constructing the payload chain.
+   */
+  pkt[o++] = mm2_has_natd ? IKE_PT_NONCE : IKE_PT_NONE;
   pkt[o++] = 0;
   util_write_be16(pkt + o, (uint16_t)(4 + dh_pubkey_bytes));
   o += 2;
   memcpy(pkt + o, pubkey, dh_pubkey_bytes);
   o += dh_pubkey_bytes;
 
-  pkt[o++] = IKE_PT_NONE;
+  pkt[o++] = mm2_has_natd ? IKE_PT_NAT_D : IKE_PT_NONE;
   pkt[o++] = 0;
   util_write_be16(pkt + o, (uint16_t)(4 + sizeof(ni)));
   o += 2;
@@ -1459,10 +1467,6 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     natd_hash(ike->icookie, ike->rcookie, fake_ip, fake_port, h_us);
     natd_hash(ike->icookie, ike->rcookie, ip_peer, port_peer_be, h_peer);
 
-    /* Change the Nonce payload's next-payload field to NAT-D. */
-    pkt[28] = IKE_PT_NAT_D;
-
-    pkt[o - (4 + sizeof(ni))] = IKE_PT_NAT_D;
     pkt[o++] = IKE_PT_NAT_D;
     pkt[o++] = 0;
     util_write_be16(pkt + o, (uint16_t)(4 + 20));
@@ -1470,7 +1474,6 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     memcpy(pkt + o, h_us, 20);
     o += 20;
 
-    pkt[o - (4 + 20)] = IKE_PT_NONE;
     pkt[o++] = IKE_PT_NONE;
     pkt[o++] = 0;
     util_write_be16(pkt + o, (uint16_t)(4 + 20));
