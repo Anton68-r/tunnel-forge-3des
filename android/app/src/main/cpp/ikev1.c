@@ -1723,7 +1723,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     // Main Mode message 5: encrypted (IDii + HASH_I).
     uint8_t inner5[64];
     size_t i5 = 0;
-    inner5[i5++] = IKE_PT_HASH;
+    inner5[i5++] = IKE_PT_ID;
     inner5[i5++] = 0;
     util_write_be16(inner5 + i5, (uint16_t)(4 + sizeof(id_body)));
     i5 += 2;
