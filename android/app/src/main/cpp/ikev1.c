@@ -1403,31 +1403,6 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
   memcpy(id_body + 4, ip_us, 4);
   tunnel_log("IKE Phase1 transport locked: %s prefix=%d", p1_prefix ? "UDP4500" : "UDP500", p1_prefix);
 
-  // IKEv1 Main Mode message 3: KE, Ni, NAT-D (src), NAT-D (peer).
-  // Force NAT-T by hashing a zeroed source IP so the NAT-D check always fails. Android
-  // userspace cannot send raw ESP (IP proto 50), so UDP encapsulation on port 4500 is mandatory.
-  uint8_t h_us[20], h_peer[20];
-  {
-    uint8_t fake_ip[4] = {0, 0, 0, 0};
-    uint16_t fake_port = 0;
-    natd_hash(icookie, ike->rcookie, fake_ip, fake_port, h_us);
-  }
-  natd_hash(icookie, ike->rcookie, ip_peer, port_peer_be, h_peer);
-
-  o = 0;
-  memcpy(pkt + o, ike->icookie, 8);
-  o += 8;
-  memcpy(pkt + o, ike->rcookie, 8);
-  o += 8;
-  pkt[o++] = IKE_PT_KE;
-  pkt[o++] = 0x10;
-  pkt[o++] = IKE_EXCH_MAIN;
-  pkt[o++] = 0;
-  util_write_be32(pkt + o, 0);
-  o += 4;
-  size_t len_m3 = o;
-  o += 4;
-
   // IKEv1 Main Mode message 3: KE, Ni, optionally NAT-D payloads.
   // Only include NAT-D when the responder advertised NAT-T in MM2.
   int mm2_has_natd = 0;
@@ -1448,20 +1423,65 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
       mleft -= (int)mpl;
     }
   }
-  uint8_t h_us[20], h_peer[20];
-  if (mm2_has_natd) {
-    uint8_t fake_ip[4] = {0, 0, 0, 0};
-    uint16_t fake_port = 0;
-    natd_hash(ike->icookie, ike->rcookie, fake_ip, fake_port, h_us);
-    natd_hash(ike->icookie, ike->rcookie, ip_peer, port_peer_be, h_peer);
-  }
+
+  o = 0;
+  memcpy(pkt + o, ike->icookie, 8);
+  o += 8;
+  memcpy(pkt + o, ike->rcookie, 8);
+  o += 8;
+  pkt[o++] = IKE_PT_KE;
+  pkt[o++] = 0x10;
+  pkt[o++] = IKE_EXCH_MAIN;
+  pkt[o++] = 0;
+  util_write_be32(pkt + o, 0);
+  o += 4;
+  size_t len_m3 = o;
+  o += 4;
 
   pkt[o++] = IKE_PT_NONCE;
   pkt[o++] = 0;
   util_write_be16(pkt + o, (uint16_t)(4 + dh_pubkey_bytes));
   o += 2;
   memcpy(pkt + o, pubkey, dh_pubkey_bytes);
-  o += dh_pubkey_bytes;  util_write_be32(pkt + len_m3, (uint32_t)o);
+  o += dh_pubkey_bytes;
+
+  pkt[o++] = IKE_PT_NONE;
+  pkt[o++] = 0;
+  util_write_be16(pkt + o, (uint16_t)(4 + sizeof(ni)));
+  o += 2;
+  memcpy(pkt + o, ni, sizeof(ni));
+  o += sizeof(ni);
+
+  if (mm2_has_natd) {
+    uint8_t h_us[20], h_peer[20];
+    uint8_t fake_ip[4] = {0, 0, 0, 0};
+    uint16_t fake_port = 0;
+    natd_hash(ike->icookie, ike->rcookie, fake_ip, fake_port, h_us);
+    natd_hash(ike->icookie, ike->rcookie, ip_peer, port_peer_be, h_peer);
+
+    /* Change the Nonce payload's next-payload field to NAT-D. */
+    pkt[16 + 1] = 0x00; /* header byte 17 remains flags; payload header is at offset 28. */
+    /* The first payload header starts at offset 28; its next-payload byte is byte 28. */
+    pkt[28] = IKE_PT_NAT_D;
+
+    pkt[o - (4 + sizeof(ni))] = IKE_PT_NAT_D;
+    pkt[o++] = IKE_PT_NAT_D;
+    pkt[o++] = 0;
+    util_write_be16(pkt + o, (uint16_t)(4 + 20));
+    o += 2;
+    memcpy(pkt + o, h_us, 20);
+    o += 20;
+
+    pkt[o - (4 + 20)] = IKE_PT_NONE;
+    pkt[o++] = IKE_PT_NONE;
+    pkt[o++] = 0;
+    util_write_be16(pkt + o, (uint16_t)(4 + 20));
+    o += 2;
+    memcpy(pkt + o, h_peer, 20);
+    o += 20;
+  }
+
+  util_write_be32(pkt + len_m3, (uint32_t)o);
 
   tunnel_log("IKE Main Mode msg3 -> %zu bytes (nat_t_prefix=%d)", o, p1_prefix);
   inlen = ike_send_recv(fd, (struct sockaddr *)&peer_active, peer_active_len, pkt, o, in, sizeof(in), 165000, p1_prefix);
