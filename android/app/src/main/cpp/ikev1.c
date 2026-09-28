@@ -1460,8 +1460,6 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     natd_hash(ike->icookie, ike->rcookie, ip_peer, port_peer_be, h_peer);
 
     /* Change the Nonce payload's next-payload field to NAT-D. */
-    pkt[16 + 1] = 0x00; /* header byte 17 remains flags; payload header is at offset 28. */
-    /* The first payload header starts at offset 28; its next-payload byte is byte 28. */
     pkt[28] = IKE_PT_NAT_D;
 
     pkt[o - (4 + sizeof(ni))] = IKE_PT_NAT_D;
