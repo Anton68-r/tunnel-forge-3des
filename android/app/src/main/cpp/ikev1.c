@@ -1447,7 +1447,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
    *
    * Set each Next Payload field while constructing the payload chain.
    */
-  pkt[o++] = mm2_has_natd ? IKE_PT_NONCE : IKE_PT_NONE;
+  pkt[o++] = IKE_PT_NONCE;
   pkt[o++] = 0;
   util_write_be16(pkt + o, (uint16_t)(4 + dh_pubkey_bytes));
   o += 2;
