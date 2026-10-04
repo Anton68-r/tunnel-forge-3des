@@ -627,7 +627,6 @@ static int isakmp_3des_encrypt(const uint8_t key24[24], uint8_t iv_io[8], const 
     return -1;
   memcpy(buf, plain, plain_len);
   memset(buf + plain_len, 0, pad);
-  buf[plain_len + pad - 1] = (uint8_t)(pad - 1); /* RFC 2409 padding length byte */
   size_t tot = plain_len + pad;
 
   mbedtls_cipher_context_t ciph;
@@ -785,7 +784,6 @@ static int isakmp_aes128_encrypt(const uint8_t key16[16], uint8_t iv_io[16], con
     return -1;
   memcpy(buf, plain, plain_len);
   memset(buf + plain_len, 0, pad);
-  buf[plain_len + pad - 1] = (uint8_t)(pad - 1); /* RFC 2409 padding length byte */
   size_t tot = plain_len + pad;
   mbedtls_cipher_context_t ciph;
   mbedtls_cipher_init(&ciph);
