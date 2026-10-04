@@ -1661,6 +1661,20 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
     memset(p1_iv + 8, 0, 8);
   }
 
+  /*
+   * Diagnostic-only phase-1 crypto dump. No PSK is logged.
+   * These values let us compare TunnelForge byte-for-byte with a known-good IKEv1 client.
+   */
+  ike_hex_dump("IKE SKEYID", skeyid, sizeof(skeyid), sizeof(skeyid));
+  ike_hex_dump("IKE SKEYID_d", skeyid_d, sizeof(skeyid_d), sizeof(skeyid_d));
+  ike_hex_dump("IKE SKEYID_a", skeyid_a, sizeof(skeyid_a), sizeof(skeyid_a));
+  ike_hex_dump("IKE SKEYID_e", skeyid_e, sizeof(skeyid_e), sizeof(skeyid_e));
+
+  /* RFC 2409 Appendix B: AES-128 takes the first 16 bytes of SKEYID_e. */
+  /* p1_iv is the initial IV hash(g^xi | g^xr), truncated to the AES block size. */
+  ike_hex_dump("IKE AES-128 key", aeskey, sizeof(aeskey), sizeof(aeskey));
+  ike_hex_dump("IKE Phase1 IV", p1_iv, ike->p1_aes ? 16 : 8, ike->p1_aes ? 16 : 8);
+
   /* RFC 2409 uses SAi_b from MM1 for HASH_I/HASH_R. Keep MM2-selected SA as compatibility fallback. */
   const uint8_t *sa_hash_primary = sa_inner;
   size_t sa_hash_primary_len = sa_len;
@@ -1719,6 +1733,7 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
       }
       free(hb);
     }
+    ike_hex_dump("IKE HASH_I", hash_i, sizeof(hash_i), sizeof(hash_i));
 
     // Main Mode message 5: encrypted (IDii + HASH_I).
     uint8_t inner5[64];
@@ -1744,6 +1759,20 @@ static int ipsec_negotiate(const char *server, const char *psk, ike_session_t *i
       if (isakmp_aes128_encrypt(aeskey, iv5, inner5, i5, ct5, &ct5l) != 0) {
         tunnel_engine_log(ANDROID_LOG_ERROR, LOG_TAG, "IKE MM msg5: AES encrypt failed");
         goto fail_fd;
+      }
+      ike_hex_dump("IKE MM5 plaintext", inner5, i5, i5);
+      ike_hex_dump("IKE MM5 ciphertext", ct5, ct5l, ct5l);
+      {
+        uint8_t rt[128];
+        size_t rtl = 0;
+        uint8_t rtiv[16];
+        uint8_t iv_rt[16];
+        memcpy(iv_rt, p1_iv, 16);
+        int rt_ok = isakmp_aes128_decrypt(aeskey, iv_rt, ct5, ct5l, rt, &rtl, rtiv) == 0 &&
+                    rtl == i5 && memcmp(rt, inner5, i5) == 0;
+        tunnel_engine_log(ANDROID_LOG_DEBUG, LOG_TAG,
+                          "IKE MM5 AES round-trip: %s decrypted_len=%zu expected_len=%zu",
+                          rt_ok ? "OK" : "FAIL", rtl, i5);
       }
       /* MM6 uses the last ciphertext block of MM5 as its CBC IV (RFC 2409). */
       memcpy(msg5_iv_out, ct5 + ct5l - 16, 16);
